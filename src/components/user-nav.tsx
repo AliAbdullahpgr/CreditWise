@@ -13,12 +13,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { placeHolderImages } from "@/lib/placeholder-images";
+import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Link from "next/link";
 import { Settings, LogOut, User } from "lucide-react";
 
 export function UserNav() {
-  const userAvatar = placeHolderImages.find(p => p.id === "user-avatar");
+  const userAvatar = PlaceHolderImages.find(p => p.id === "user-avatar");
 
   return (
     <DropdownMenu>

@@ -1,0 +1,265 @@
+Skip to content
+Home
+About
+Blog
+Search Debt.org
+Search Debt.org
+debt.org logo with white text and colored flag
+Credit Cards
+Bankruptcy
+Mortgages
+Personal Loans
+Student Loans
+Taxes
+(888) 454-2316 
+Advertiser Disclosure
+Credit Scoring Models
+Updated: September 1, 2023 | Bill Fay
+Home > Credit > Understanding Credit Reports > Credit Scoring Models
+
+There are several models used to determine a credit score, so your score for an auto loan may be different from your score for mortgages or credit cards.
+
+What Is a Credit Score?
+A credit score is a 3-digit number that reflects the likelihood that a consumer will repay his debts. With so many scoring models used to determine your credit score, your score can vary several points, depending on whose model is used and what type of business (department store? car dealership? bank?) is asking for it.
+
+The most recognized credit score is the FICO score, which comes from the Fair Isaac Company. FICO has more than 50 different versions of your score that it sends to lenders. The score may change, depending on which company asks and what was important to that company in calculating your score.
+
+That means your FICO score for a department store might be slightly better (or worse) than your FICO score for a bank considering you for an auto loan. And that will be slightly different from your FICO score for insurance, which could vary from your score for a mortgage loan.
+
+It’s also possible the inquiring company could use your Vantage Score, a Community Empower (CE) score or one from any of the three major credit reporting bureaus, Experian, Equifax and TransUnion, to judge your credit worthiness.
+
+What Is a Credit Scoring Model?
+Credit scoring models are statistical analyses used by credit bureaus that evaluate your worthiness to receive credit. The agencies select statistical characteristics found in a person’s credit payment patterns, analyze them and come up with a credit score.
+
+Scoring calculations are based on payment record, frequency of payments, amount of debts, credit charge-offs and number of credit cards held. A weight is assigned to each factor considered in the model’s formula, and a credit score is assigned based on the evaluation.
+
+Scores generally range from 300 (low end) to 850 (top end). » Learn How To Get Your Credit Score Up To 800.
+
+Basically, the higher your credit score, the better your chances for getting a mortgage, car loan, or credit card at the lowest possible interest rate. That makes it worth understanding how your credit score is determined.
+
+FICO Scoring Model
+The FICO scoring model is an algorithm that produces what is considered the most reliable credit scores. About 90% of lenders use FICO’s model to evaluate candidates for credit. FICO has been around since 1989 and there have been numerous revisions over the last three decades to take into account the changing factors that determine an accurate credit score.
+
+The “classic” FICO scoring model gives consumers a number between 300 and 850. A score under 600 is considered poor. A score above 740 is considered excellent. In between is considered average to above average.
+
+The latest scoring model is FICO 10, which debuted in 2021. But the most significant changes came with FICO 9, introduced in 2014. The three most significant changes in FICO 9 were: less weight on unpaid medical bills, no penalty for a collections process as long as you have repaid the amount in collection, and inclusion of rental history as part of your overall credit history.
+
+Why the changes? Unpaid medical debt was not necessarily an indicator of financial health. An individual could be waiting on insurance payments before paying the debt or they might not even know that a bill was sent to collections. In some cases, this factor could cause the credit score to rise by as much as 25 points. Similarly, as home ownership became more difficult to attain, a person’s responsible paying of rent was counted as a plus.
+
+More changes were added in 2017 when Equifax, Experian and TransUnion removed all civil judgment data and many tax lien records from credit files. But that meant credit-score improvement for only about 6% of consumers, FICO said, because those changes largely occurred on accounts that already contained other derogatory information.
+
+In another 2017 change, collection agencies and debt buyers were prohibited from reporting medical debts until they were 180 days old.
+
+FICO 9 succeeded FICO 8, which came out in 2009 and is the version most heavily used by the lending industry. FICO 8 penalized consumers for spending close to their credit limit every month and offered leniency to those who made an “isolated” late payment, meaning one that arrived more than 30 days late.
+
+When FICO releases a new version of its scoring model, lenders have a choice: Upgrade or stay with the version they have. Many lenders opt to stay with the version they have because it can be expensive to upgrade.
+
+FICO compares it to a consumer upgrading a computer operating system every time a new version of Windows is released. You may be satisfied with Windows XP or you may have upgraded to Windows 8 or 10.
+
+The same thing happens with businesses and lenders who use the FICO score. Some lenders are still using FICO 5. Some have upgraded to FICO 9 or 10. The only way to know the FICO score meaning is to ask the lender you are dealing with.
+
+How Are FICO Scores Calculated?
+While FICO tweaks the weight of various factors based on evolving economic realities, there remain five base factors in every credit score model.
+
+Payment History
+Payment history is the record of your ability and willingness to pay bills on time. That’s why payment history counts for 35% of your score. If you make payments on time and don’t have public records for lawsuits, liens, bankruptcies or foreclosure, your score will reflect that positively. Late payments are a negative. The later the payment, the more your score will be penalized.
+
+Credit Utilization
+Credit utilization marks the percentage of your available credit you have used. If you have a $10,000 limit on a credit, a balance of $1,000 looks better to the algorithm than if you already owe $9,000. Credit utilization rates count for 30% of your FICO score.
+
+Credit History
+The longer you’ve had credit cards, or other loans, the better for your credit score. Your history counts for 15% of your credit score.
+
+Credit Use
+Credit use is a measure of how many forms of credit you have and how well you keep up with them. A mix of credit cards, mortgage or rent, auto loans and utilities give you a varied credit history. Paying them all regularly improves your profile, which counts for 10% of your FICO score.
+
+New Credit
+At issue here is the way you apply for credit. Applying for a credit card, a mortgage, or an auto loan is fine. But if you apply for several cards, or a card as well as an auto loan, that raises suspicion that you’re using one card to pay off other debts. This counts for 10% of your FICO score.
+
+Vantage Score Model
+The VantageScore model was introduced in 2006 when the three major credit reporting bureaus — Experian, Equifax and TransUnion – decided to offer FICO some competition in the credit score business.
+
+The VantageScore model looks at familiar data — things like paying on time, keeping credit card balances low, avoiding new credit obligations, bank accounts and other assets — to calculate its score.
+
+High Weight: Payment History (40%) — Whether you pay on time is the top predictor of risk. Remember that late payments are a negative that can appear on your credit report for seven years.
+
+Extreme Weight: Age And Type Of Credit (21%) — What’s the mix between your length of credit history and your account? Are you paying on a 30-year mortgage at the same time you’re paying on a 5-year car loan and monthly credit card bills? If you can handle all that – with on-time payments! – you will do very well in this category.
+
+Extreme Weight: Credit Utilization (20%) — It’s dividing your balances by your available credit. It’s recommended to keep your utilization under 30%.
+
+Medium Weight: Total Balances (11%) — It’s your total debt (both current and delinquent). Similar to credit utilization, by lowering your debt, it gives you a higher chance of increasing your credit score.
+
+Low Weight: Recent Behavior (5%) — It deals with newly opened accounts and the number of hard inquiries. A high number is not a good sign for your credit report.
+
+Extremely Low Weight: Available Credit (3%) — It’s the amount of credit you have available to use. Keep in mind that the VantageScore model is used by Credit Karma, a service that provides your free credit score and report, along with credit monitoring and advice.
+
+VantageScore saw some scoring changes in 2017, mostly in the area of “trended data.’’ A person who is paying down debt is now likely to be scored better than a person who is making minimum payments and slowly accumulating credit card debt.
+
+Other factors unique to VantageScore include ignoring collections — paid or unpaid — less than $250 and relief for accounts negatively affected by natural disasters. The VantageScore scoring scale is the same as FICO’s 300–850, but it includes a letter grade (A through F) to help you better understand your score.
+
+The VantageScore uses information from all three credit reporting bureaus, but weighs certain factors more heavily or less heavily than the FICO algorithm. Thus, the scores should be similar, but rarely identical.
+
+“When you add up all the brands and customized versions, each consumer may have more than a hundred different scores, and most of them you may never see or even know about,” says John Ulzheimer, a credit expert who has worked at FICO and Equifax.
+
+Other Credit Scoring Models
+Outside of the conventional and well-known outlets, there are several other credit scoring models.
+
+TransRisk — It’s based on data from TransUnion and determines an individual’s risk on new accounts, instead of existing accounts. Because of that specialized nature, there’s not much information available about the TransRisk score. Accordingly, it isn’t utilized by many lenders. It has been reported that an individual’s TransRisk score has generally been drastically lower than their FICO score.
+
+Experian’s National Equivalency Score — It assigns users a score of 0-1,000 — with the typical criteria of payment history, credit length, credit mix, credit utilization, total balances and the number of inquiries — but Experian has never publicized the score’s criteria or weight. The scoring seems counterintuitive for consumers accustomed to the FICO system. In Experian’s system a score of 100 means a 10% chance that at least one account will become delinquent in the next 24 months, while a score of 900 means a 90% chance of that. There is an alternative scoring method of 360 to 840 (840 is good, 360 is bad, making it more compatible with the FICO model.
+
+Credit Xpert Credit Score — It was developed to help businesses approve new account candidates. It inspects credit reports for ways to raise its score quickly or detect false information. By improving those scores, that should lead to more loan approval for customers.
+
+CE Credit Score — The creator of this scoring model (CE Analytics) was unhappy with the current model of customers paying for their credit score and companies hiding how their credit scores were revealed. This is a free service, available at Quizzle, and it’s meant to create a free, transparent and accurate credit score. There’s scoring from 330 to 830. The model’s sister company, Quicken Loans, uses it in credit determinations.
+
+Insurance Score — Here’s a fun fact: Insurance companies use an insurance credit score to determine your risk as a customer. Insurance scores range from 200-997 — generally, a good score is 770 or higher, while 500 or lower is considered poor — but it varies in different types of insurance. It’s wise to monitor your insurance score because that’s how your premiums are determined.
+
+Industry-Specific Credit Score
+FICO drills deeper into financial data and helps lenders predict how you will do with specific types of loans, such as a mortgage or auto loan or credit cards.
+
+The three major credit bureaus that provide data to FICO all want industry-specific scores as well. Experian and Equifax provide 16 different FICO credit scores to lenders, while TransUnion has 21. More are added each year.
+
+Industry-specific scores are optimized for specific credit products like auto loans or credit cards. FICO uses the same base of information available in its “classic” scores, but fine-tunes the data based on industry-specific risk behavior.
+
+So, if you are buying a car, the dealership or bank offering you a loan may want to know your credit history for paying off similar loans on a monthly basis. They could factor in past car loans, credit card payments or rent and utility payments to judge the risk they’re taking.
+
+The scoring model for industry-specific scores and “classic scores” has a major difference. The range for industry-specific scores is 250-900, while the range for classic scores fall is 300-850.
+
+Scoring Models Keep Secrets
+Companies that develop scoring models prefer to keep details of the models behind closed doors because they consider them privately held and because they make money by selling results of the models. However, given the information that banks and credit card companies ask on their applications, it is not difficult to interpret some factors that weight heavily on your score.
+
+Among the factors considered are:
+
+Bankruptcies, collections, missed payments and foreclosures listed on your credit report.
+Your occupation and your time at your current job.
+Whether you own or rent your residence.
+Amount of time living at your current location.
+The number of inquiries into your credit over a period of time.
+The balances of your used credit to your available credit.
+Your age.
+The length of your credit report.
+The length of time your credit history has been in the bureau’s database.
+Credit Scoring Model Practice Changes
+Credit scoring models were first utilized in the credit industry more than 50 years ago. They were developed as a way to determine a repeatable, workable methodology in administering and underwriting credit debt, residential mortgages, credit cards and indirect and direct consumer installment loans.
+
+Early models were based on a greater degree of subjectivity rather than statistical analysis. That resulted in discriminatory and fraudulent loan and credit practices. Over time, a number of state and federal protections were put into place to reduce the subjectivity and make the process fair, equitable and transparent.
+
+Two of the protections are the federal Fair Credit Reporting Act and the Equal Credit Opportunity Act, which outlaw the consideration of marital status, race, religion or sex as factors in making credit-scoring decisions.
+
+Benefits of Credit Scoring Models
+Speed is the major benefit to consumers of having credit scoring models. Lenders can evaluate thousands of applications quickly and impartially. Decisions on mortgages, car loans or extended limits on credit cards can be handled in days or even minutes.
+
+In fact, the consistency of data in scoring models allows for financial statements, credit ratings and credit account statuses to be evaluated quickly and accurately. It also reduces the possibility of human error. This helps customers and their orders get processed more quickly.
+
+On the flip side, it reduces bad debt losses for companies. Otherwise, those companies could make bad decisions in whether to extend credit to a customer. Businesses can specify the factors they want to be considered in the credit decision process. They know almost immediately if they are dealing with a high-risk or low-risk customer.
+
+That has allowed the businesses to operate more efficiently and reduce the cost of vital services like mortgages, car loans and credit cards.
+
+Credit scores allow consumers access to personal loans and help financial institutions control allocation of risk and costs with their customers. Businesses can better execute transactions with customers when they have access to objective information for evaluation of a customer’s creditworthiness.
+
+Consumers also benefit when they are rewarded for on-time, responsible payment of debts that improve their credit score. This gives them access to the credit they need to take advantage of products in the market. The scores also serve as an incentive for good financial decision making.
+
+Two Types of Credit Scoring Models
+While there are a number of credit scoring models utilized to determine a person’s credit worthiness, there are essentially two distinct types of scoring models that can be validated statistically.
+
+These models will either use a statistical or judgmental scoring analysis. In each case, the end credit score result can vary as well.
+
+A statistical scoring model utilizes multiple factors from one or a number of credit reporting agencies, correlates them and then assigns weights to each factor. The model does not consider the individual judgments or experiences of any credit officials.
+
+A judgmental scoring model considers an individual or organizational financial statement, payment history, bank references and even the credit official’s own previous experience in handling its products and services. By including these elements in someone’s credit history, a subjective judgment is given more weight in determining the credit score rating scale.
+
+Credit Scores
+ 11 Minute Read
+
+Table of Contents
+
+Credit Menu
+Collection Agencies
+Credit Solutions
+Credit Counseling
+Understanding Credit Reports
+Credit Score Fluctuations
+Credit Unions
+Credit and Your Consumer Rights
+Credit Cards
+Identity Theft
+How to Increase Your Credit Score
+Consumer Credit & Loans
+Unsecured Debt
+Debt Consolidation Calculator
+Wage Garnishment Process
+How to Build Your Credit History Without Using a Credit Card
+
+About The Author
+
+Bill Fay
+Bill “No Pay” Fay has lived a meager financial existence his entire life. He started writing/bragging about it in 2012, helping birth Debt.org into existence as the site’s original “Frugal Man.” Prior to that, he spent more than 30 years covering the high finance world of college and professional sports for major publications, including the Associated Press, New York Times and Sports Illustrated. His interest in sports has waned some, but he is as passionate as ever about not reaching for his wallet.
+
+Posts navigation
+← Credit
+Credit Protection Laws: The Consumer Credit Protection Act →
+Sources:
+N.A. (July 19, 2023) What’s ahead for Bank of America and its customers. Retrieved from https://www.consumerfinance.gov/about-us/blog/whats-ahead-for-bank-of-america-and-its-customers/
+White, G. (Jan. 4, 2017) Two Major Credit Reporting Agencies Have Been Lying to Customers. Retrieved from https://www.theatlantic.com/business/archive/2017/01/credit-scores-cfpb/512162/
+Wang, P. (Nov. 24, 2020) How to Make Sense of Your (Dozens of) Credit Scores. Retrieved from https://www.consumerreports.org/money/credit-scores-reports/how-to-make-sense-of-your-credit-scores-a2455434368/
+Fleischman, J. (April 3, 2023) Your Credit Score is a Scam Designed to Keep You in Debt. Retrieved from https://www.moneywiselaw.com/credit-score-important/
+Mercadante, K. (June 9, 2023) FICO 9: The 3 Important Changes It Made to Your Credit Score. Retrieved from https://www.moneyunder30.com/fico-9
+O’Shea, B. (March 4, 2022) What is a VantageScore? Retrieved from https://www.nerdwallet.com/article/finance/vantagescore-fico-score-the-difference
+Related Articles You'll Love
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Too Much Debt? Let Us Help You Eliminate Your Debt
+Consolidate Debt in Minutes
+NAVIGATION
+Home
+
+Understand Your Debt
+
+Manage Your Debt
+
+Debt Advice
+
+Blog
+
+OUR SERVICES
+Debt Consolidation
+
+Free Consultation
+
+About Us
+
+Privacy Policy
+
+Terms & Conditions
+
+Stay Connected
+Join our mailing list for monthly tips on ways to manage your finances!
+
+Newsletter Signup
+First Name
+Last Name
+Email Address
+Subscribe
+JOIN OUR COMMUNITY
+Join Debt.org on Facebook
+
+Debtonator footer
+© 2012-2025 Debt.org LLC. All rights reserved
+
+5750 Major Boulevard, Suite 350
+Orlando, FL 32819
+BBB Accredited Logo
+
+Loading

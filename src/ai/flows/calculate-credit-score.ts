@@ -1,46 +1,77 @@
 'use server';
 
 /**
- * @fileOverview A credit score calculation AI agent.
- *
- * - calculateCreditScore - A function that handles the credit score calculation process.
- * - CalculateCreditScoreInput - The input type for the calculateCreditScore function.
- * - CalculateCreditScoreOutput - The return type for the calculateCreditScore function.
+ * @fileOverview Alternative Credit Score Calculation for Informal Economy Workers
+ * 
+ * IMPORTANT: This is NOT a FICO or traditional credit score!
+ * 
+ * This scoring model is specifically designed for individuals in the informal economy
+ * who lack traditional credit products (credit cards, bank loans, mortgages).
+ * 
+ * Target Users:
+ * - Gig workers and freelancers
+ * - Street vendors and small merchants
+ * - Cash-based economy workers
+ * - Mobile wallet users
+ * - Anyone without traditional banking history
+ * 
+ * Why Traditional FICO Doesn't Work:
+ * - Requires credit cards (which target users don't have)
+ * - Focuses on debt utilization (irrelevant for cash economy)
+ * - Ignores income patterns and expense discipline
+ * - Excludes 2+ billion people worldwide
+ * 
+ * Our Alternative Factors (0-1000 scale):
+ * - Payment History (30%): Rent, utilities, mobile bills
+ * - Income Consistency (25%): Regular earning patterns
+ * - Expense Management (20%): Spending discipline & savings
+ * - Financial Growth (15%): Income trends over time
+ * - Transaction Diversity (10%): Multiple income sources
+ * 
+ * Functions:
+ * - calculateCreditScore - Calculates alternative credit score
+ * - CalculateCreditScoreInput - Input type with 6 factor scores
+ * - CalculateCreditScoreOutput - Output with score, grade, breakdown
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const CalculateCreditScoreInputSchema = z.object({
+  billPaymentHistory: z
+    .number()
+    .min(0)
+    .max(100)
+    .describe(
+      'Payment history for rent, utilities, mobile bills (0-100). Weight: 30%. Most important factor.'
+    ),
   incomeConsistency: z
     .number()
+    .min(0)
+    .max(100)
     .describe(
-      'A score (0-100) representing the consistency of the user\u2019s income. Higher values indicate more consistent income.'
+      'Regularity and consistency of income patterns (0-100). Weight: 25%. Measures earning stability.'
     ),
   expenseManagement: z
     .number()
+    .min(0)
+    .max(100)
     .describe(
-      'A score (0-100) representing how well the user manages their expenses. Higher values indicate better expense management.'
-    ),
-  billPaymentHistory: z
-    .number()
-    .describe(
-      'A score (0-100) representing the user\u2019s bill payment history. Higher values indicate a better payment history.'
+      'Expense-to-income ratio and savings behavior (0-100). Weight: 20%. Shows financial discipline.'
     ),
   financialGrowth: z
     .number()
+    .min(0)
+    .max(100)
     .describe(
-      'A score (0-100) representing the user\u2019s financial growth. Higher values indicate better financial growth.'
+      'Income growth trend over 3-6 months (0-100). Weight: 15%. Indicates improving financial health.'
     ),
   transactionDiversity: z
     .number()
+    .min(0)
+    .max(100)
     .describe(
-      'A score (0-100) representing the diversity of the user\u2019s transactions. Higher values indicate more diverse transactions.'
-    ),
-  financialDiscipline: z
-    .number()
-    .describe(
-      'A score (0-100) representing the user\u2019s financial discipline. Higher values indicate better financial discipline.'
+      'Variety of income sources and transaction types (0-100). Weight: 10%. Shows diversified income.'
     ),
 });
 export type CalculateCreditScoreInput = z.infer<typeof CalculateCreditScoreInputSchema>;
@@ -48,18 +79,24 @@ export type CalculateCreditScoreInput = z.infer<typeof CalculateCreditScoreInput
 const CalculateCreditScoreOutputSchema = z.object({
   creditScore: z
     .number()
-    .describe('The calculated credit score (0-1000).'),
+    .min(0)
+    .max(1000)
+    .describe('Alternative Credit Score (0-1000) for informal economy workers.'),
   riskGrade: z
     .string()
     .describe(
-      'The risk grade assigned to the user based on their credit score (A/B/C/D).'
+      'Risk grade: A (800+), B+ (700-799), B (600-699), C (500-599), D (<500)'
     ),
   scoreBreakdown: z
     .string()
-    .describe('A detailed breakdown of how the credit score was calculated.'),
+    .describe('Detailed breakdown showing how each factor contributed to the final score.'),
   recommendations: z
     .string()
-    .describe('Personalized recommendations for improving the credit score.'),
+    .describe('Personalized recommendations for improving the alternative credit score.'),
+  scoreType: z
+    .string()
+    .default('Alternative Credit Score')
+    .describe('Type of credit score - always "Alternative Credit Score" for informal economy'),
 });
 export type CalculateCreditScoreOutput = z.infer<typeof CalculateCreditScoreOutputSchema>;
 
@@ -73,38 +110,57 @@ const prompt = ai.definePrompt({
   name: 'calculateCreditScorePrompt',
   input: {schema: CalculateCreditScoreInputSchema},
   output: {schema: CalculateCreditScoreOutputSchema},
-  prompt: `You are an AI assistant that calculates a credit score based on the user's financial data.
+  prompt: `You are an AI credit analyst specializing in Alternative Credit Scoring for the informal economy.
 
-  The credit score is calculated based on the following factors:
+  IMPORTANT: This is NOT a traditional FICO score. This is an Alternative Credit Score designed for:
+  - Gig workers and freelancers
+  - Street vendors and small merchants  
+  - Cash-based economy workers
+  - Mobile wallet users
+  - Anyone without traditional credit cards or bank loans
 
-  1. Income Consistency (25%): variance in monthly income, regularity
-  2. Expense Management (20%): expense-to-income ratio, savings pattern
-  3. Bill Payment History (20%): utility bills paid on time, regularity
-  4. Financial Growth (15%): income trend over time (3-6 months)
-  5. Transaction Diversity (10%): variety of income sources
-  6. Financial Discipline (10%): avoiding overdrafts, maintaining buffer
+  Traditional FICO scores don't work for these users because they require credit cards, loans, and banking history.
+  Our alternative model evaluates financial behavior through different lenses.
 
-  Algorithm steps:
+  Scoring Factors (0-1000 scale):
+  1. Bill Payment History (30%): Rent, utilities, mobile bills - on-time payment patterns
+  2. Income Consistency (25%): Regular earning patterns, variance in monthly income
+  3. Expense Management (20%): Expense-to-income ratio, savings behavior, financial discipline
+  4. Financial Growth (15%): Income trend over 3-6 months, positive trajectory
+  5. Transaction Diversity (10%): Variety of income sources, transaction types
 
-  1. Calculate each factor score (0-100) - this is provided to you in the input
-  2. Apply weighted average using weights above
-  3. Scale to 0-1000
-  4. Assign risk grade: A (800+), B (600-799), C (400-599), D (<400)
+  Algorithm:
+  1. Take each factor score (0-100) provided in input
+  2. Apply weighted average: (BPH*0.30) + (IC*0.25) + (EM*0.20) + (FG*0.15) + (TD*0.10)
+  3. Scale result to 0-1000 range
+  4. Assign risk grade:
+     - A (800-1000): Excellent - Very low risk
+     - B+ (700-799): Good - Low risk
+     - B (600-699): Fair - Moderate risk
+     - C (500-599): Needs improvement - Higher risk
+     - D (<500): Poor - High risk
 
-  Based on the input:
-  Income Consistency: {{{incomeConsistency}}}
-  Expense Management: {{{expenseManagement}}}
-  Bill Payment History: {{{billPaymentHistory}}}
-  Financial Growth: {{{financialGrowth}}}
-  Transaction Diversity: {{{transactionDiversity}}}
-  Financial Discipline: {{{financialDiscipline}}}
+  Input Scores:
+  Bill Payment History: {{{billPaymentHistory}}} (Weight: 30%)
+  Income Consistency: {{{incomeConsistency}}} (Weight: 25%)
+  Expense Management: {{{expenseManagement}}} (Weight: 20%)
+  Financial Growth: {{{financialGrowth}}} (Weight: 15%)
+  Transaction Diversity: {{{transactionDiversity}}} (Weight: 10%)
 
-  1. Calculate the credit score.
-  2. Assign a risk grade based on the credit score.
-  3. Provide a detailed breakdown showing how the score was calculated.
-  4. Provide personalized recommendations for improving the credit score.
+  Tasks:
+  1. Calculate the Alternative Credit Score (0-1000)
+  2. Assign appropriate risk grade (A/B+/B/C/D)
+  3. Provide detailed breakdown:
+     - Show how each factor contributed (e.g., "Bill Payment: 85/100 * 30% = 25.5 points")
+     - Show weighted sum and scaling to 0-1000
+     - Explain what the score means for loan eligibility
+  4. Provide 3-5 personalized recommendations:
+     - Focus on lowest scoring factors
+     - Give actionable steps (e.g., "Pay utility bills on time for 3 months")
+     - Explain potential score improvement
+  5. Include 'scoreType': 'Alternative Credit Score' in response
 
-  Make sure to return the data in JSON format.
+  Return data in JSON format matching the schema.
 `,
 });
 
@@ -114,7 +170,7 @@ const calculateCreditScoreFlow = ai.defineFlow(
     inputSchema: CalculateCreditScoreInputSchema,
     outputSchema: CalculateCreditScoreOutputSchema,
   },
-  async input => {
+  async (input: CalculateCreditScoreInput) => {
     const {output} = await prompt(input);
     return output!;
   }

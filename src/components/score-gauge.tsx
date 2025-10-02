@@ -19,16 +19,19 @@ export function ScoreGauge({ value, max = 1000 }: ScoreGaugeProps) {
   useEffect(() => {
     if (value >= 800) {
       setGrade("A");
+      setGradeColor("text-green-600");
+    } else if (value >= 700) {
+      setGrade("B+");
       setGradeColor("text-green-500");
     } else if (value >= 600) {
       setGrade("B");
       setGradeColor("text-blue-500");
-    } else if (value >= 400) {
+    } else if (value >= 500) {
       setGrade("C");
-      setGradeColor("text-yellow-500");
+      setGradeColor("text-yellow-600");
     } else {
       setGrade("D");
-      setGradeColor("text-red-500");
+      setGradeColor("text-red-600");
     }
   }, [value]);
 

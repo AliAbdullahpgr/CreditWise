@@ -21,6 +21,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScoreGauge } from "@/components/score-gauge";
 import { ExpenseChart, ScoreHistoryChart } from "@/components/charts";
+import { AlternativeCreditScoreInfo } from "@/components/alternative-credit-info";
+import { ScoreBreakdown } from "@/components/score-breakdown";
 import { userFinancials, documents } from "@/lib/data";
 import { Transaction } from '@/lib/types';
 import {
@@ -65,15 +67,18 @@ export default function DashboardPage() {
         <Card className="md:col-span-1 flex flex-col items-center justify-center text-center">
           <CardHeader>
             <CardTitle className="font-headline text-2xl">
-              Your Credit Score
+              Alternative Credit Score
             </CardTitle>
             <CardDescription>
-              Updated: {new Date().toLocaleDateString()}
+              For informal economy workers • Updated: {new Date().toLocaleDateString()}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex-1 flex items-center justify-center">
             <ScoreGauge value={userFinancials.creditScore} />
           </CardContent>
+          <div className="px-6 pb-4 text-xs text-muted-foreground text-center">
+            Not a FICO score. Designed for workers without traditional credit.
+          </div>
         </Card>
         <div className="md:col-span-2 grid grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
           <Card>
@@ -158,12 +163,17 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3 lg:gap-8">
+        <AlternativeCreditScoreInfo />
+        <ScoreBreakdown />
+      </div>
+
       <div className="grid grid-cols-1 gap-6 md:grid-cols-5 lg:gap-8">
         <Card className="md:col-span-3">
           <CardHeader>
             <CardTitle className="font-headline">Score History</CardTitle>
             <CardDescription>
-              Your credit score trend over the last 6 months.
+              Your alternative credit score trend over the last 6 months.
             </CardDescription>
           </CardHeader>
           <CardContent>

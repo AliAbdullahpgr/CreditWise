@@ -6,6 +6,12 @@ export const userFinancials = {
   avgMonthlyExpense: 1800,
   savingsRate: 28,
   paymentConsistency: 85,
+  // Alternative Credit Score Factors (for demo purposes)
+  billPaymentHistory: 85,
+  incomeConsistency: 80,
+  expenseManagement: 75,
+  financialGrowth: 70,
+  transactionDiversity: 65,
 };
 
 export const transactions: Transaction[] = [

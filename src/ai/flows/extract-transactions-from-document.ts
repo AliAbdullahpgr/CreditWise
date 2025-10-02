@@ -20,12 +20,12 @@ const TransactionSchema = z.object({
   status: z.enum(['cleared', 'pending']).default('cleared'),
 });
 
-export const ExtractTransactionsFromDocumentInputSchema = z.object({
+const ExtractTransactionsFromDocumentInputSchema = z.object({
   documentText: z.string().describe('The OCR text extracted from a financial document.'),
 });
 export type ExtractTransactionsFromDocumentInput = z.infer<typeof ExtractTransactionsFromDocumentInputSchema>;
 
-export const ExtractTransactionsFromDocumentOutputSchema = z.object({
+const ExtractTransactionsFromDocumentOutputSchema = z.object({
   transactions: z.array(TransactionSchema),
 });
 export type ExtractTransactionsFromDocumentOutput = z.infer<typeof ExtractTransactionsFromDocumentOutputSchema>;

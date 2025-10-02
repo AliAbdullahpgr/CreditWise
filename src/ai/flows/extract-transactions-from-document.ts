@@ -21,7 +21,7 @@ const TransactionSchema = z.object({
 });
 
 const ExtractTransactionsFromDocumentInputSchema = z.object({
-  documentText: z.string().describe('The OCR text extracted from a financial document.'),
+  document: z.string().describe("A document, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."),
 });
 export type ExtractTransactionsFromDocumentInput = z.infer<typeof ExtractTransactionsFromDocumentInputSchema>;
 
@@ -34,15 +34,15 @@ const extractTransactionsPrompt = ai.definePrompt({
   name: 'extractTransactionsPrompt',
   input: { schema: ExtractTransactionsFromDocumentInputSchema },
   output: { schema: ExtractTransactionsFromDocumentOutputSchema },
-  prompt: `You are an expert at extracting structured transaction data from OCR text.
+  prompt: `You are an expert at extracting structured transaction data from OCR text from a document.
   
-  Analyze the following document text and extract all transactions.
+  Analyze the following document and extract all transactions.
   For each transaction, determine if it is 'income' or 'expense' based on the amount and type.
   'Purchase' types or negative amounts are 'expense'. 'Deposit' types or positive amounts are 'income'.
   For 'Transfer' types, use the amount sign to determine if it is income or expense.
 
-  Document Text:
-  {{{documentText}}}
+  Document:
+  {{media url=document}}
 
   Respond in JSON format with a list of transactions.
   `,

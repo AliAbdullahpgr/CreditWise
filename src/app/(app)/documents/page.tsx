@@ -107,7 +107,7 @@ export default function DocumentsPage() {
         const dataUri = await fileToDataUri(file);
         
         const result = await extractTransactionsFromDocument({
-          documentText: `File: ${file.name}, Data: ${dataUri}`,
+          document: dataUri,
         });
         
         if (result.transactions && result.transactions.length > 0) {

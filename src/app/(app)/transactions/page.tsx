@@ -40,6 +40,9 @@ import {
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState("all");
+  const [filterCategory, setFilterCategory] = useState("all");
 
   useEffect(() => {
     // Client-side fetch from localStorage
@@ -57,6 +60,14 @@ export default function TransactionsPage() {
   
   const allCategories = [...new Set(transactions.map(t => t.category))];
 
+  // Filter transactions based on search and filters
+  const filteredTransactions = transactions.filter((transaction) => {
+    const matchesSearch = transaction.merchant.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = filterType === "all" || transaction.type === filterType;
+    const matchesCategory = filterCategory === "all" || transaction.category === filterCategory;
+    return matchesSearch && matchesType && matchesCategory;
+  });
+
   return (
     <Card>
       <CardHeader>
@@ -67,8 +78,13 @@ export default function TransactionsPage() {
       </CardHeader>
       <CardContent>
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <Input placeholder="Filter by merchant..." className="max-w-sm" />
-          <Select>
+          <Input 
+            placeholder="Filter by merchant..." 
+            className="max-w-sm"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <Select value={filterType} onValueChange={setFilterType}>
             <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Filter by type" />
             </SelectTrigger>
@@ -78,7 +94,7 @@ export default function TransactionsPage() {
               <SelectItem value="expense">Expense</SelectItem>
             </SelectContent>
           </Select>
-          <Select>
+          <Select value={filterCategory} onValueChange={setFilterCategory}>
             <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Filter by category" />
             </SelectTrigger>
@@ -100,8 +116,8 @@ export default function TransactionsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {transactions.length > 0 ? (
-              transactions.map((transaction) => (
+            {filteredTransactions.length > 0 ? (
+              filteredTransactions.map((transaction) => (
                 <TableRow key={transaction.id}>
                   <TableCell>
                     <div className="font-medium">{transaction.merchant}</div>

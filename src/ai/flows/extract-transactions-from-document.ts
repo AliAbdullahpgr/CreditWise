@@ -30,12 +30,6 @@ export const ExtractTransactionsFromDocumentOutputSchema = z.object({
 });
 export type ExtractTransactionsFromDocumentOutput = z.infer<typeof ExtractTransactionsFromDocumentOutputSchema>;
 
-export async function extractTransactionsFromDocument(
-  input: ExtractTransactionsFromDocumentInput
-): Promise<ExtractTransactionsFromDocumentOutput> {
-  return extractTransactionsFlow(input);
-}
-
 const extractTransactionsPrompt = ai.definePrompt({
   name: 'extractTransactionsPrompt',
   input: { schema: ExtractTransactionsFromDocumentInputSchema },
@@ -65,3 +59,9 @@ const extractTransactionsFlow = ai.defineFlow(
     return output || { transactions: [] };
   }
 );
+
+export async function extractTransactionsFromDocument(
+  input: ExtractTransactionsFromDocumentInput
+): Promise<ExtractTransactionsFromDocumentOutput> {
+  return extractTransactionsFlow(input);
+}

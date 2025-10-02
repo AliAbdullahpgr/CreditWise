@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { documents as initialDocuments } from '@/lib/data';
+import { Document, Transaction } from '@/lib/types';
 import {
   Upload,
   Camera,
@@ -32,9 +32,14 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
+import { categorizeTransaction } from '@/ai/flows/categorize-transactions';
+
+const initialDocuments: Document[] = [];
+const initialTransactions: Transaction[] = [];
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState(initialDocuments);
+  const [transactions, setTransactions] = useState(initialTransactions);
   const [filesToUpload, setFilesToUpload] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -62,6 +67,17 @@ export default function DocumentsPage() {
   const removeFile = (index: number) => {
     setFilesToUpload((prevFiles) => prevFiles.filter((_, i) => i !== index));
   };
+  
+  const fileToDataUri = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        resolve(reader.result as string);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
 
   const handleUpload = async () => {
     if (filesToUpload.length === 0) {
@@ -76,44 +92,62 @@ export default function DocumentsPage() {
     setIsUploading(true);
     setUploadProgress(0);
 
-    // Simulate upload progress
-    const progressInterval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 90) {
-          return 90;
-        }
-        return prev + 10;
-      });
-    }, 200);
+    const newDocuments: Document[] = [];
+    const newTransactions: Transaction[] = [];
 
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    for (let i = 0; i < filesToUpload.length; i++) {
+      const file = filesToUpload[i];
+      const docId = `doc${Date.now()}${i}`;
+      
+      const currentDocument: Document = {
+        id: docId,
+        name: file.name,
+        uploadDate: new Date().toISOString().split('T')[0],
+        type: file.type.startsWith('image/') ? 'receipt' : 'utility bill',
+        status: 'pending',
+      };
+      
+      setDocuments(prev => [currentDocument, ...prev]);
+      
+      try {
+        const dataUri = await fileToDataUri(file);
+        
+        // This is a simplified call. In a real app, you might extract more details.
+        const result = await categorizeTransaction({
+          merchantName: "Unknown", 
+          amount: 0,
+          description: file.name,
+        });
 
-    clearInterval(progressInterval);
-    setUploadProgress(100);
+        const newTransaction: Transaction = {
+          id: `txn${Date.now()}${i}`,
+          date: new Date().toISOString().split('T')[0],
+          merchant: result.subcategory || "AI Processed",
+          amount: 0, // Amount would ideally come from OCR
+          type: result.category === 'income' ? 'income' : 'expense',
+          category: result.category,
+          status: 'cleared',
+        };
+        newTransactions.push(newTransaction);
+        
+        setDocuments(prev => prev.map(d => d.id === docId ? { ...d, status: 'processed' } : d));
 
-    // Add uploaded files to the documents list with a 'pending' status
-    const newDocuments = filesToUpload.map((file, i) => ({
-      id: `doc${Date.now()}${i}`,
-      name: file.name,
-      uploadDate: new Date().toISOString().split('T')[0],
-      type: file.type.startsWith('image/') ? 'receipt' : 'utility bill',
-      status: 'pending' as const,
-    }));
+      } catch (error) {
+        console.error("AI processing failed for", file.name, error);
+        setDocuments(prev => prev.map(d => d.id === docId ? { ...d, status: 'failed' } : d));
+      }
+      
+      setUploadProgress(((i + 1) / filesToUpload.length) * 100);
+    }
 
-    // Simulate processing delay for some files
-    setTimeout(() => {
-      setDocuments((prev) => [
-        ...newDocuments.map((doc) => ({ ...doc, status: 'processed' as const })),
-        ...prev,
-      ]);
-      setIsUploading(false);
-      setFilesToUpload([]);
-      toast({
-        title: 'Upload complete',
-        description: `${filesToUpload.length} document(s) processed.`,
-      });
-    }, 1500);
+    setTransactions(prev => [...newTransactions, ...prev]);
+    setIsUploading(false);
+    setFilesToUpload([]);
+
+    toast({
+      title: 'Upload complete',
+      description: `${filesToUpload.length} document(s) have been processed.`,
+    });
   };
 
 
@@ -211,12 +245,12 @@ export default function DocumentsPage() {
               {isUploading && (
                 <div className='space-y-2 pt-2'>
                   <Progress value={uploadProgress} />
-                  <p className="text-sm text-muted-foreground text-center">Uploading...</p>
+                  <p className="text-sm text-muted-foreground text-center">Processing...</p>
                 </div>
               )}
               <Button onClick={handleUpload} disabled={isUploading} className='w-full'>
                 <Upload className="mr-2 h-4 w-4" />
-                Upload {filesToUpload.length} file(s)
+                Upload & Process {filesToUpload.length} file(s)
               </Button>
             </div>
           )}
@@ -235,9 +269,9 @@ export default function DocumentsPage() {
               </span>
             </div>
           </div>
-          <Button className="w-full" size="lg">
+          <Button className="w-full" size="lg" disabled>
             <Camera className="mr-2 h-5 w-5" />
-            Use Camera to Scan
+            Use Camera to Scan (Coming Soon)
           </Button>
         </CardContent>
       </Card>
@@ -296,4 +330,5 @@ export default function DocumentsPage() {
       </Card>
     </div>
   );
-}
+
+    

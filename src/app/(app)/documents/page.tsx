@@ -116,7 +116,7 @@ export default function DocumentsPage() {
         const result = await categorizeTransaction({
           merchantName: "Unknown", 
           amount: 0,
-          description: file.name,
+          description: `File: ${file.name}, Data: ${dataUri}`,
         });
 
         const newTransaction: Transaction = {
@@ -330,5 +330,4 @@ export default function DocumentsPage() {
       </Card>
     </div>
   );
-
-    
+}

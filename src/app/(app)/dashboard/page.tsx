@@ -120,27 +120,37 @@ export default function DashboardPage() {
               </p>
             </CardContent>
           </Card>
-          {latestDocument && (
-            <Card className="col-span-2 lg:col-span-1">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Last Processed Document
-                </CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-sm font-bold truncate">
-                  {latestDocument.name}
-                </div>
-                <p className="text-xs text-muted-foreground capitalize">
-                  {latestDocument.type} - {latestDocument.uploadDate}
-                </p>
-                <Button variant="link" className="p-0 h-auto text-xs mt-1" asChild>
-                  <Link href="/documents">View all</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+          <Card className="col-span-2">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-base font-headline">Recent Activity</CardTitle>
+              <Button size="sm" variant="outline" asChild>
+                <Link href="/transactions">View All</Link>
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {transactions.length > 0 ? (
+                <ul className="space-y-3">
+                  {transactions.slice(0, 3).map((t) => (
+                     <li key={t.id} className="flex items-center gap-3">
+                      <div className={`p-2 rounded-full ${t.type === 'income' ? 'bg-green-100 dark:bg-green-900' : 'bg-red-100 dark:bg-red-900'}`}>
+                         {t.type === 'income' ? <ArrowDownLeft className="h-4 w-4 text-green-600 dark:text-green-400" /> : <ArrowUpRight className="h-4 w-4 text-red-600 dark:text-red-400" />}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">{t.merchant}</p>
+                        <p className="text-xs text-muted-foreground">{t.date}</p>
+                      </div>
+                      <p className={`font-semibold text-sm ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                        {t.type === 'income' ? '+' : '-'}
+                        {formatCurrency(Math.abs(t.amount))}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">No recent transactions.</p>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
 

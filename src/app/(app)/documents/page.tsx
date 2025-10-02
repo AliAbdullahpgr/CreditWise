@@ -20,6 +20,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Document, Transaction } from '@/lib/types';
+import { documents as initialDocuments, transactions as initialTransactions } from '@/lib/data';
 import {
   Upload,
   Camera,
@@ -32,14 +33,11 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
-import { categorizeTransaction } from '@/ai/flows/categorize-transactions';
-
-const initialDocuments: Document[] = [];
-const initialTransactions: Transaction[] = [];
+import { extractTransactionsFromDocument } from '@/ai/flows/extract-transactions-from-document';
 
 export default function DocumentsPage() {
-  const [documents, setDocuments] = useState(initialDocuments);
-  const [transactions, setTransactions] = useState(initialTransactions);
+  const [documents, setDocuments] = useState<Document[]>(initialDocuments);
+  const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
   const [filesToUpload, setFilesToUpload] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -62,7 +60,7 @@ export default function DocumentsPage() {
     e.preventDefault();
     e.stopPropagation();
     handleFileSelect(e.dataTransfer.files);
-  }, []);
+  }, [handleFileSelect]);
 
   const removeFile = (index: number) => {
     setFilesToUpload((prevFiles) => prevFiles.filter((_, i) => i !== index));
@@ -92,8 +90,7 @@ export default function DocumentsPage() {
     setIsUploading(true);
     setUploadProgress(0);
 
-    const newDocuments: Document[] = [];
-    const newTransactions: Transaction[] = [];
+    const uploadedDocs: Document[] = [];
 
     for (let i = 0; i < filesToUpload.length; i++) {
       const file = filesToUpload[i];
@@ -107,40 +104,47 @@ export default function DocumentsPage() {
         status: 'pending',
       };
       
+      uploadedDocs.unshift(currentDocument);
       setDocuments(prev => [currentDocument, ...prev]);
       
       try {
         const dataUri = await fileToDataUri(file);
         
-        // This is a simplified call. In a real app, you might extract more details.
-        const result = await categorizeTransaction({
-          merchantName: "Unknown", 
-          amount: 0,
-          description: `File: ${file.name}, Data: ${dataUri}`,
+        const result = await extractTransactionsFromDocument({
+          documentText: `File: ${file.name}, Data: ${dataUri}`,
         });
+        
+        if (result.transactions && result.transactions.length > 0) {
+          const newTransactions = result.transactions.map(t => ({
+            ...t,
+            id: t.id || `txn-${Date.now()}-${Math.random()}`
+          }));
 
-        const newTransaction: Transaction = {
-          id: `txn${Date.now()}${i}`,
-          date: new Date().toISOString().split('T')[0],
-          merchant: result.subcategory || "AI Processed",
-          amount: 0, // Amount would ideally come from OCR
-          type: result.category === 'income' ? 'income' : 'expense',
-          category: result.category,
-          status: 'cleared',
-        };
-        newTransactions.push(newTransaction);
+          // This is a temporary way to update global state for demo purposes.
+          // In a real app, this would be a call to a context or state manager.
+          initialTransactions.unshift(...newTransactions);
+          setTransactions(prev => [...newTransactions, ...prev]);
+        }
         
         setDocuments(prev => prev.map(d => d.id === docId ? { ...d, status: 'processed' } : d));
 
       } catch (error) {
         console.error("AI processing failed for", file.name, error);
         setDocuments(prev => prev.map(d => d.id === docId ? { ...d, status: 'failed' } : d));
+         toast({
+          variant: "destructive",
+          title: "Processing Failed",
+          description: `Could not process ${file.name}.`,
+        });
       }
       
       setUploadProgress(((i + 1) / filesToUpload.length) * 100);
     }
+    
+    // This is to update the global documents array for demo purposes
+    initialDocuments.unshift(...uploadedDocs.filter(d => !initialDocuments.find(id => id.id === d.id)));
 
-    setTransactions(prev => [...newTransactions, ...prev]);
+
     setIsUploading(false);
     setFilesToUpload([]);
 

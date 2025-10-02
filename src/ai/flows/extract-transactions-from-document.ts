@@ -1,0 +1,67 @@
+'use server';
+/**
+ * @fileOverview An AI flow for extracting multiple transactions from a document.
+ *
+ * - extractTransactionsFromDocument - A function that extracts transaction data from a text blob.
+ * - ExtractTransactionsFromDocumentInput - The input type for the function.
+ * - ExtractTransactionsFromDocumentOutput - The return type for the function.
+ */
+
+import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
+
+const TransactionSchema = z.object({
+  id: z.string().describe('A unique identifier for the transaction.'),
+  date: z.string().describe('The date of the transaction (e.g., YYYY-MM-DD).'),
+  merchant: z.string().describe('The name of the client or merchant.'),
+  amount: z.number().describe('The transaction amount. Negative for purchases/transfers out, positive for deposits/transfers in.'),
+  type: z.enum(['income', 'expense']).describe('The type of transaction.'),
+  category: z.string().describe('A suitable category for the transaction (e.g., Purchase, Deposit, Transfer).'),
+  status: z.enum(['cleared', 'pending']).default('cleared'),
+});
+
+export const ExtractTransactionsFromDocumentInputSchema = z.object({
+  documentText: z.string().describe('The OCR text extracted from a financial document.'),
+});
+export type ExtractTransactionsFromDocumentInput = z.infer<typeof ExtractTransactionsFromDocumentInputSchema>;
+
+export const ExtractTransactionsFromDocumentOutputSchema = z.object({
+  transactions: z.array(TransactionSchema),
+});
+export type ExtractTransactionsFromDocumentOutput = z.infer<typeof ExtractTransactionsFromDocumentOutputSchema>;
+
+export async function extractTransactionsFromDocument(
+  input: ExtractTransactionsFromDocumentInput
+): Promise<ExtractTransactionsFromDocumentOutput> {
+  return extractTransactionsFlow(input);
+}
+
+const extractTransactionsPrompt = ai.definePrompt({
+  name: 'extractTransactionsPrompt',
+  input: { schema: ExtractTransactionsFromDocumentInputSchema },
+  output: { schema: ExtractTransactionsFromDocumentOutputSchema },
+  prompt: `You are an expert at extracting structured transaction data from OCR text.
+  
+  Analyze the following document text and extract all transactions.
+  For each transaction, determine if it is 'income' or 'expense' based on the amount and type.
+  'Purchase' types or negative amounts are 'expense'. 'Deposit' types or positive amounts are 'income'.
+  For 'Transfer' types, use the amount sign to determine if it is income or expense.
+
+  Document Text:
+  {{{documentText}}}
+
+  Respond in JSON format with a list of transactions.
+  `,
+});
+
+const extractTransactionsFlow = ai.defineFlow(
+  {
+    name: 'extractTransactionsFlow',
+    inputSchema: ExtractTransactionsFromDocumentInputSchema,
+    outputSchema: ExtractTransactionsFromDocumentOutputSchema,
+  },
+  async (input) => {
+    const { output } = await extractTransactionsPrompt(input);
+    return output || { transactions: [] };
+  }
+);

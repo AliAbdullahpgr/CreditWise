@@ -262,23 +262,34 @@ export default function DocumentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {documents.map((doc) => (
-                <TableRow key={doc.id}>
-                  <TableCell className="font-medium">{doc.name}</TableCell>
-                  <TableCell className="hidden sm:table-cell capitalize">
-                    {doc.type}
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    {doc.uploadDate}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusBadgeVariant(doc.status)}>
-                      {getStatusIcon(doc.status)}
-                      <span className="ml-2 capitalize">{doc.status}</span>
-                    </Badge>
+              {documents.length > 0 ? (
+                documents.map((doc) => (
+                  <TableRow key={doc.id}>
+                    <TableCell className="font-medium">{doc.name}</TableCell>
+                    <TableCell className="hidden sm:table-cell capitalize">
+                      {doc.type}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {doc.uploadDate}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusBadgeVariant(doc.status)}>
+                        {getStatusIcon(doc.status)}
+                        <span className="ml-2 capitalize">{doc.status}</span>
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={4}
+                    className="h-24 text-center text-muted-foreground"
+                  >
+                    No documents uploaded yet.
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>

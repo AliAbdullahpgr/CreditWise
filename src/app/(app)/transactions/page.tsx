@@ -86,35 +86,46 @@ export default function TransactionsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {transactions.map((transaction) => (
-              <TableRow key={transaction.id}>
-                <TableCell>
-                  <div className="font-medium">{transaction.merchant}</div>
-                  <div className="text-sm text-muted-foreground md:hidden">
+            {transactions.length > 0 ? (
+              transactions.map((transaction) => (
+                <TableRow key={transaction.id}>
+                  <TableCell>
+                    <div className="font-medium">{transaction.merchant}</div>
+                    <div className="text-sm text-muted-foreground md:hidden">
+                      {transaction.date}
+                    </div>
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell capitalize">
+                    {transaction.type}
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    <Badge variant="outline">{transaction.category}</Badge>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
                     {transaction.date}
-                  </div>
-                </TableCell>
-                <TableCell className="hidden sm:table-cell capitalize">
-                  {transaction.type}
-                </TableCell>
-                <TableCell className="hidden sm:table-cell">
-                  <Badge variant="outline">{transaction.category}</Badge>
-                </TableCell>
-                <TableCell className="hidden md:table-cell">
-                  {transaction.date}
-                </TableCell>
+                  </TableCell>
+                  <TableCell
+                    className={`text-right font-semibold ${
+                      transaction.type === "income"
+                        ? "text-green-600"
+                        : "text-red-600"
+                    }`}
+                  >
+                    {transaction.type === "income" ? "+" : "-"}
+                    {formatCurrency(transaction.amount)}
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
                 <TableCell
-                  className={`text-right font-semibold ${
-                    transaction.type === "income"
-                      ? "text-green-600"
-                      : "text-red-600"
-                  }`}
+                  colSpan={5}
+                  className="h-24 text-center text-muted-foreground"
                 >
-                  {transaction.type === "income" ? "+" : "-"}
-                  {formatCurrency(transaction.amount)}
+                  No transactions yet.
                 </TableCell>
               </TableRow>
-            ))}
+            )}
           </TableBody>
         </Table>
         <Pagination className="mt-6">

@@ -55,52 +55,65 @@ export default function ReportsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {creditReports.map((report) => (
-                <TableRow key={report.id}>
-                  <TableCell className="font-mono text-sm">{report.id}</TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    {report.generationDate}
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell font-semibold">
-                    {report.score}
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    <Badge
-                      variant={
-                        report.grade === "A" || report.grade === "B"
-                          ? "default"
-                          : "destructive"
-                      }
-                    >
-                      {report.grade}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Eye className="mr-2 h-4 w-4" />
-                          View
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Share2 className="mr-2 h-4 w-4" />
-                          Share
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Download className="mr-2 h-4 w-4" />
-                          Download PDF
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+              {creditReports.length > 0 ? (
+                creditReports.map((report) => (
+                  <TableRow key={report.id}>
+                    <TableCell className="font-mono text-sm">
+                      {report.id}
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      {report.generationDate}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell font-semibold">
+                      {report.score}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      <Badge
+                        variant={
+                          report.grade === "A" || report.grade === "B"
+                            ? "default"
+                            : "destructive"
+                        }
+                      >
+                        {report.grade}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Share2 className="mr-2 h-4 w-4" />
+                            Share
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Download className="mr-2 h-4 w-4" />
+                            Download PDF
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="h-24 text-center text-muted-foreground"
+                  >
+                    No reports generated yet.
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>

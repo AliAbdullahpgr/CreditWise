@@ -1,3 +1,7 @@
+
+'use client';
+
+import { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -15,7 +19,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { transactions } from "@/lib/data";
+import { Transaction } from "@/lib/types";
 import {
   Select,
   SelectContent,
@@ -35,6 +39,16 @@ import {
 } from "@/components/ui/pagination";
 
 export default function TransactionsPage() {
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+
+  useEffect(() => {
+    // Client-side fetch from localStorage
+    const storedTransactions = localStorage.getItem("transactions");
+    if (storedTransactions) {
+      setTransactions(JSON.parse(storedTransactions));
+    }
+  }, []);
+
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -112,7 +126,7 @@ export default function TransactionsPage() {
                     }`}
                   >
                     {transaction.type === "income" ? "+" : "-"}
-                    {formatCurrency(transaction.amount)}
+                    {formatCurrency(Math.abs(transaction.amount))}
                   </TableCell>
                 </TableRow>
               ))

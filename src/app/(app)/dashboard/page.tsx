@@ -1,3 +1,7 @@
+
+'use client';
+
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -17,7 +21,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScoreGauge } from "@/components/score-gauge";
 import { ExpenseChart, ScoreHistoryChart } from "@/components/charts";
-import { transactions, userFinancials, documents } from "@/lib/data";
+import { userFinancials, documents } from "@/lib/data";
+import { Transaction } from '@/lib/types';
 import {
   ArrowUpRight,
   ArrowDownLeft,
@@ -30,6 +35,17 @@ import {
 import Link from "next/link";
 
 export default function DashboardPage() {
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+
+  useEffect(() => {
+    // Client-side fetch from localStorage
+    const storedTransactions = localStorage.getItem("transactions");
+    if (storedTransactions) {
+      setTransactions(JSON.parse(storedTransactions));
+    }
+  }, []);
+
+
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -120,35 +136,23 @@ export default function DashboardPage() {
               </p>
             </CardContent>
           </Card>
-          <Card className="col-span-2">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-base font-headline">Recent Activity</CardTitle>
-              <Button size="sm" variant="outline" asChild>
-                <Link href="/transactions">View All</Link>
-              </Button>
+           <Card className="col-span-2">
+            <CardHeader>
+              <CardTitle className="text-base font-headline">Latest Processed Document</CardTitle>
             </CardHeader>
             <CardContent>
-              {transactions.length > 0 ? (
-                <ul className="space-y-3">
-                  {transactions.slice(0, 3).map((t) => (
-                     <li key={t.id} className="flex items-center gap-3">
-                      <div className={`p-2 rounded-full ${t.type === 'income' ? 'bg-green-100 dark:bg-green-900' : 'bg-red-100 dark:bg-red-900'}`}>
-                         {t.type === 'income' ? <ArrowDownLeft className="h-4 w-4 text-green-600 dark:text-green-400" /> : <ArrowUpRight className="h-4 w-4 text-red-600 dark:text-red-400" />}
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{t.merchant}</p>
-                        <p className="text-xs text-muted-foreground">{t.date}</p>
-                      </div>
-                      <p className={`font-semibold text-sm ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                        {t.type === 'income' ? '+' : '-'}
-                        {formatCurrency(Math.abs(t.amount))}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">No recent transactions.</p>
-              )}
+              {latestDocument ? (
+                  <div className="flex items-center gap-3">
+                    <FileText className="h-6 w-6 text-muted-foreground" />
+                    <div className="flex-1">
+                      <p className="font-medium text-sm truncate">{latestDocument.name}</p>
+                      <p className="text-xs text-muted-foreground">Processed on {latestDocument.uploadDate}</p>
+                    </div>
+                     <Badge variant="default">Processed</Badge>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">No documents processed yet.</p>
+                )}
             </CardContent>
           </Card>
         </div>
@@ -180,11 +184,16 @@ export default function DashboardPage() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="font-headline">Recent Transactions</CardTitle>
-          <CardDescription>
-            A list of your most recent income and expenses.
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="font-headline">Recent Transactions</CardTitle>
+            <CardDescription>
+              A list of your most recent income and expenses.
+            </CardDescription>
+          </div>
+           <Button size="sm" variant="outline" asChild>
+              <Link href="/transactions">View All</Link>
+            </Button>
         </CardHeader>
         <CardContent>
           <Table>
@@ -203,14 +212,14 @@ export default function DashboardPage() {
                     <TableCell>
                       <div className="font-medium">{transaction.merchant}</div>
                       <div className="text-sm text-muted-foreground md:hidden">
-                        {transaction.date}
+                        {new Date(transaction.date).toLocaleDateString()}
                       </div>
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">
                       <Badge variant="outline">{transaction.category}</Badge>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
-                      {transaction.date}
+                      {new Date(transaction.date).toLocaleDateString()}
                     </TableCell>
                     <TableCell
                       className={`text-right font-semibold ${
@@ -220,7 +229,7 @@ export default function DashboardPage() {
                       }`}
                     >
                       {transaction.type === "income" ? "+" : "-"}
-                      {formatCurrency(transaction.amount)}
+                      {formatCurrency(Math.abs(transaction.amount))}
                     </TableCell>
                   </TableRow>
                 ))
@@ -230,7 +239,7 @@ export default function DashboardPage() {
                     colSpan={4}
                     className="h-24 text-center text-muted-foreground"
                   >
-                    No transactions yet.
+                    No transactions yet. Upload a document to get started.
                   </TableCell>
                 </TableRow>
               )}

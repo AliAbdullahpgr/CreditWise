@@ -20,7 +20,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Document, Transaction } from '@/lib/types';
-import { documents as initialDocuments, transactions as initialTransactions } from '@/lib/data';
+import { documents as initialDocuments } from '@/lib/data';
 import {
   Upload,
   Camera,
@@ -37,7 +37,6 @@ import { extractTransactionsFromDocument } from '@/ai/flows/extract-transactions
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState<Document[]>(initialDocuments);
-  const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
   const [filesToUpload, setFilesToUpload] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -60,7 +59,7 @@ export default function DocumentsPage() {
     e.preventDefault();
     e.stopPropagation();
     handleFileSelect(e.dataTransfer.files);
-  }, [handleFileSelect]);
+  }, []);
 
   const removeFile = (index: number) => {
     setFilesToUpload((prevFiles) => prevFiles.filter((_, i) => i !== index));
@@ -90,8 +89,6 @@ export default function DocumentsPage() {
     setIsUploading(true);
     setUploadProgress(0);
 
-    const uploadedDocs: Document[] = [];
-
     for (let i = 0; i < filesToUpload.length; i++) {
       const file = filesToUpload[i];
       const docId = `doc${Date.now()}${i}`;
@@ -104,7 +101,6 @@ export default function DocumentsPage() {
         status: 'pending',
       };
       
-      uploadedDocs.unshift(currentDocument);
       setDocuments(prev => [currentDocument, ...prev]);
       
       try {
@@ -120,10 +116,9 @@ export default function DocumentsPage() {
             id: t.id || `txn-${Date.now()}-${Math.random()}`
           }));
 
-          // This is a temporary way to update global state for demo purposes.
-          // In a real app, this would be a call to a context or state manager.
-          initialTransactions.unshift(...newTransactions);
-          setTransactions(prev => [...newTransactions, ...prev]);
+          const existingTransactions: Transaction[] = JSON.parse(localStorage.getItem('transactions') || '[]');
+          const updatedTransactions = [...newTransactions, ...existingTransactions];
+          localStorage.setItem('transactions', JSON.stringify(updatedTransactions));
         }
         
         setDocuments(prev => prev.map(d => d.id === docId ? { ...d, status: 'processed' } : d));
@@ -141,10 +136,6 @@ export default function DocumentsPage() {
       setUploadProgress(((i + 1) / filesToUpload.length) * 100);
     }
     
-    // This is to update the global documents array for demo purposes
-    initialDocuments.unshift(...uploadedDocs.filter(d => !initialDocuments.find(id => id.id === d.id)));
-
-
     setIsUploading(false);
     setFilesToUpload([]);
 

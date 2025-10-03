@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -27,16 +28,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
-import { onSnapshot, query, where, orderBy, collection } from 'firebase/firestore';
-import { db } from '@/lib/firebase/config';
-
-// MOCK USER ID
-const MOCK_USER_ID = "user-test-001";
+import { onSnapshot, query, where, orderBy } from 'firebase/firestore';
+import { auth } from '@/lib/firebase/config';
+import { getCreditReportsCollection } from '@/lib/firebase/collections';
 
 export default function ReportsPage() {
   const [creditReports, setCreditReports] = useState<CreditReport[]>([]);
   const [loading, setLoading] = useState(true);
-  const userId = MOCK_USER_ID;
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
+      setUserId(user ? user.uid : 'user-test-001'); // Fallback to mock user for demo
+    });
+    return () => unsubscribeAuth();
+  }, []);
 
   useEffect(() => {
     if (!userId) {
@@ -44,16 +50,20 @@ export default function ReportsPage() {
       return;
     }
 
+    const creditReportsCollection = getCreditReportsCollection();
     const q = query(
-      collection(db, "creditReports"),
+      creditReportsCollection,
       where('userId', '==', userId),
       orderBy('generationDate', 'desc')
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const reportData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as CreditReport[];
+      const reportData = snapshot.docs.map(doc => doc.data() as CreditReport);
       setCreditReports(reportData);
       setLoading(false);
+    }, (error) => {
+        console.error("Error fetching reports:", error);
+        setLoading(false);
     });
 
     return () => unsubscribe();
@@ -70,9 +80,9 @@ export default function ReportsPage() {
               Generate and manage your credit reports to share with lenders.
             </CardDescription>
           </div>
-          <Button>
+          <Button disabled>
             <PlusCircle className="mr-2 h-4 w-4" />
-            Generate New Report
+            Generate New Report (Soon)
           </Button>
         </CardHeader>
         <CardContent>
@@ -130,15 +140,15 @@ export default function ReportsPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem disabled>
                             <Eye className="mr-2 h-4 w-4" />
                             View
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem disabled>
                             <Share2 className="mr-2 h-4 w-4" />
                             Share
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem disabled>
                             <Download className="mr-2 h-4 w-4" />
                             Download PDF
                           </DropdownMenuItem>

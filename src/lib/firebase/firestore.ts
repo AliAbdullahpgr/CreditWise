@@ -1,12 +1,9 @@
+
 'use server';
 
 import { adminDb } from './admin';
 import { Transaction, Document, CreditReport } from '@/lib/types';
-import { 
-  FirestoreTransaction, 
-  FirestoreDocument, 
-  FirestoreCreditReport 
-} from './collections';
+import type { FirestoreTransaction, FirestoreDocument, FirestoreCreditReport } from './collections';
 
 // ==================== TRANSACTIONS ====================
 
@@ -23,55 +20,25 @@ export async function saveTransactions(
 
   transactions.forEach((transaction) => {
     const docRef = adminDb.collection('transactions').doc(transaction.id);
-    const firestoreData: FirestoreTransaction = {
+    const firestoreData: Omit<FirestoreTransaction, 'id'> & { id?: string } = {
       ...transaction,
       userId,
       sourceDocumentId,
       createdAt: now,
       updatedAt: now,
     };
+    // The transaction object from the AI might not have an ID, so we use the docRef.id
+    firestoreData.id = docRef.id;
     batch.set(docRef, firestoreData);
   });
 
   await batch.commit();
 }
 
-/**
- * Get all transactions for a user
- */
-export async function getUserTransactions(userId: string): Promise<Transaction[]> {
-  const snapshot = await adminDb
-    .collection('transactions')
-    .where('userId', '==', userId)
-    .orderBy('date', 'desc')
-    .get();
-
-  return snapshot.docs.map((doc) => {
-    const data = doc.data() as FirestoreTransaction;
-    // Return only the Transaction type fields (strip Firestore metadata)
-    return {
-      id: data.id,
-      date: data.date,
-      merchant: data.merchant,
-      amount: data.amount,
-      type: data.type,
-      category: data.category,
-      status: data.status,
-    };
-  });
-}
-
-/**
- * Delete a transaction
- */
-export async function deleteTransaction(transactionId: string): Promise<void> {
-  await adminDb.collection('transactions').doc(transactionId).delete();
-}
-
 // ==================== DOCUMENTS ====================
 
 /**
- * Create a document record (called when upload starts)
+ * Create a document record in Firestore (called when upload starts)
  */
 export async function createDocument(
   userId: string,
@@ -95,7 +62,7 @@ export async function createDocument(
 }
 
 /**
- * Update document status after processing
+ * Update document status and other metadata after processing
  */
 export async function updateDocumentStatus(
   documentId: string,
@@ -103,7 +70,7 @@ export async function updateDocumentStatus(
   extractedTransactionCount?: number,
   errorMessage?: string
 ): Promise<void> {
-  const updates: any = {
+  const updates: Record<string, any> = {
     status,
     processedAt: new Date(),
   };
@@ -119,45 +86,24 @@ export async function updateDocumentStatus(
   await adminDb.collection('documents').doc(documentId).update(updates);
 }
 
-/**
- * Get all documents for a user
- */
-export async function getUserDocuments(userId: string): Promise<Document[]> {
-  const snapshot = await adminDb
-    .collection('documents')
-    .where('userId', '==', userId)
-    .orderBy('uploadDate', 'desc')
-    .get();
-
-  return snapshot.docs.map((doc) => {
-    const data = doc.data() as FirestoreDocument;
-    return {
-      id: data.id,
-      name: data.name,
-      uploadDate: data.uploadDate,
-      type: data.type,
-      status: data.status,
-    };
-  });
-}
-
 // ==================== CREDIT REPORTS ====================
 
 /**
- * Save a credit report
+ * Save a credit report to Firestore
  */
 export async function saveCreditReport(
   userId: string,
-  report: CreditReport,
+  report: Omit<CreditReport, 'id'>,
   factors: Record<string, any>,
   transactionCount: number,
   periodStart: string,
   periodEnd: string
 ): Promise<void> {
-  const docRef = adminDb.collection('creditReports').doc(report.id);
+  const docRef = adminDb.collection('creditReports').doc();
 
   const firestoreData: FirestoreCreditReport = {
     ...report,
+    id: docRef.id,
     userId,
     factors,
     transactionCount,
@@ -167,26 +113,4 @@ export async function saveCreditReport(
   };
 
   await docRef.set(firestoreData);
-}
-
-/**
- * Get all credit reports for a user
- */
-export async function getUserCreditReports(userId: string): Promise<CreditReport[]> {
-  const snapshot = await adminDb
-    .collection('creditReports')
-    .where('userId', '==', userId)
-    .orderBy('generationDate', 'desc')
-    .get();
-
-  return snapshot.docs.map((doc) => {
-    const data = doc.data() as FirestoreCreditReport;
-    return {
-      id: data.id,
-      generationDate: data.generationDate,
-      score: data.score,
-      grade: data.grade,
-      url: data.url,
-    };
-  });
 }

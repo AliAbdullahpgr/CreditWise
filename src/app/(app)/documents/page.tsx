@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
@@ -18,7 +19,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Document, Transaction } from '@/lib/types';
+import { Document } from '@/lib/types';
 import {
   Upload,
   Camera,
@@ -33,13 +34,11 @@ import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { extractTransactionsFromDocument } from '@/ai/flows/extract-transactions-from-document';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '@/lib/firebase/config';
+import { storage, auth } from '@/lib/firebase/config';
 import { createDocument } from '@/lib/firebase/firestore';
-import { onSnapshot, query, where, orderBy, collection } from 'firebase/firestore';
-import { db } from '@/lib/firebase/config';
+import { onSnapshot, query, where, orderBy } from 'firebase/firestore';
+import { getDocumentsCollection } from '@/lib/firebase/collections';
 
-// MOCK USER ID
-const MOCK_USER_ID = "user-test-001";
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -48,24 +47,39 @@ export default function DocumentsPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const userId = MOCK_USER_ID;
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
+      setUserId(user ? user.uid : 'user-test-001'); // Fallback to mock user for demo
+    });
+    return () => unsubscribeAuth();
+  }, []);
 
   useEffect(() => {
     if (!userId) return;
 
+    const documentsCollection = getDocumentsCollection();
     const q = query(
-      collection(db, "documents"),
+      documentsCollection,
       where('userId', '==', userId),
       orderBy('uploadDate', 'desc')
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const documentData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Document[];
+      const documentData = snapshot.docs.map(doc => doc.data() as Document);
       setDocuments(documentData);
+    }, (error) => {
+        console.error("Error fetching documents:", error);
+        toast({
+            variant: "destructive",
+            title: "Could not load documents",
+            description: "Please try again later.",
+        });
     });
 
     return () => unsubscribe();
-  }, [userId]);
+  }, [userId, toast]);
 
 
   const handleFileSelect = (selectedFiles: FileList | null) => {
@@ -92,9 +106,7 @@ export default function DocumentsPage() {
   const fileToDataUri = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => {
-        resolve(reader.result as string);
-      };
+      reader.onload = () => resolve(reader.result as string);
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
@@ -123,34 +135,41 @@ export default function DocumentsPage() {
 
     for (let i = 0; i < filesToUpload.length; i++) {
       const file = filesToUpload[i];
-      
-      try {
-        // 1. Upload to Firebase Storage
-        const storageRef = ref(storage, `documents/${userId}/${Date.now()}_${file.name}`);
-        await uploadBytes(storageRef, file);
-        const downloadUrl = await getDownloadURL(storageRef);
+      let docId = '';
 
-        // 2. Create document record in Firestore
-        const documentId = await createDocument(
-          userId,
-          {
+      try {
+        // 1. Create a placeholder document in Firestore to get an ID and show 'pending' state
+        const newDoc: Omit<Document, 'id'> = {
             name: file.name,
             uploadDate: new Date().toISOString(),
             type: file.type.startsWith('image/') ? 'receipt' : 'utility bill',
             status: 'pending',
-          },
+        };
+        // This is a temporary client-side update for immediate feedback
+        setDocuments(prev => [ { ...newDoc, id: `temp-${Date.now()}`}, ...prev]);
+
+        // 2. Upload to Firebase Storage
+        const storageRef = ref(storage, `documents/${userId}/${Date.now()}_${file.name}`);
+        await uploadBytes(storageRef, file);
+        const downloadUrl = await getDownloadURL(storageRef);
+
+        // 3. Create the actual document record in Firestore
+        docId = await createDocument(
+          userId,
+          newDoc,
           downloadUrl
         );
 
-        // 3. Convert file to data URI for AI processing
+        // 4. Convert file to data URI for AI processing
         const dataUri = await fileToDataUri(file);
         
-        // 4. Call AI extraction flow (now includes userId and documentId)
+        // 5. Call AI extraction flow (now includes userId and documentId)
         await extractTransactionsFromDocument(
           { document: dataUri },
           userId,
-          documentId
+          docId
         );
+        // Real-time listener will automatically update the UI to 'processed'
 
       } catch (error) {
         console.error("Upload and processing failed for", file.name, error);
@@ -159,6 +178,7 @@ export default function DocumentsPage() {
           title: "Processing Failed",
           description: `Could not process ${file.name}.`,
         });
+        // If docId was created, you might want to update its status to 'failed' here
       }
       
       setUploadProgress(((i + 1) / filesToUpload.length) * 100);
@@ -187,7 +207,7 @@ export default function DocumentsPage() {
     }
   };
 
-  const getStatusBadgeVariant = (status: string) => {
+  const getStatusBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
       case 'processed':
         return 'default';

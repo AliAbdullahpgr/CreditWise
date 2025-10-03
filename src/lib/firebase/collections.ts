@@ -1,6 +1,10 @@
+
 import { collection, CollectionReference } from 'firebase/firestore';
 import { db } from './config';
 import { Transaction, Document, CreditReport } from '@/lib/types';
+
+// This file requires a client-side Firestore instance, so it should not be used in 'use server' files.
+// The `db` import will be undefined on the server.
 
 // Extended types with Firestore metadata
 export type FirestoreTransaction = Transaction & {
@@ -28,18 +32,8 @@ export type FirestoreCreditReport = CreditReport & {
   createdAt: Date;
 };
 
-// Collection references with proper typing
-export const transactionsCollection = collection(
-  db,
-  'transactions'
-) as CollectionReference<FirestoreTransaction>;
-
-export const documentsCollection = collection(
-  db,
-  'documents'
-) as CollectionReference<FirestoreDocument>;
-
-export const creditReportsCollection = collection(
-  db,
-  'creditReports'
-) as CollectionReference<FirestoreCreditReport>;
+// These collection references are intended for client-side use with real-time listeners.
+// They will not work in server components or server actions.
+export const getTransactionsCollection = () => collection(db, 'transactions') as CollectionReference<FirestoreTransaction>;
+export const getDocumentsCollection = () => collection(db, 'documents') as CollectionReference<FirestoreDocument>;
+export const getCreditReportsCollection = () => collection(db, 'creditReports') as CollectionReference<FirestoreCreditReport>;

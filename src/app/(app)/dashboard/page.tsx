@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -22,7 +23,7 @@ import { ScoreGauge } from "@/components/score-gauge";
 import { ExpenseChart, ScoreHistoryChart } from "@/components/charts";
 import { AlternativeCreditScoreInfo } from "@/components/alternative-credit-info";
 import { ScoreBreakdown } from "@/components/score-breakdown";
-import { userFinancials, documents as initialDocuments } from "@/lib/data";
+import { userFinancials } from "@/lib/data";
 import { Transaction, Document } from '@/lib/types';
 import {
   ArrowUpRight,
@@ -34,18 +35,22 @@ import {
   FileText,
 } from "lucide-react";
 import Link from "next/link";
-import { onSnapshot, query, where, orderBy, collection } from 'firebase/firestore';
-import { db } from '@/lib/firebase/config';
-import { transactionsCollection, documentsCollection } from '@/lib/firebase/collections';
-
-// MOCK USER ID
-const MOCK_USER_ID = "user-test-001";
+import { onSnapshot, query, where, orderBy } from 'firebase/firestore';
+import { auth } from '@/lib/firebase/config';
+import { getTransactionsCollection, getDocumentsCollection } from '@/lib/firebase/collections';
 
 export default function DashboardPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
-  const userId = MOCK_USER_ID;
+  const [userId, setUserId] = useState<string | null>(null);
+
+   useEffect(() => {
+    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
+      setUserId(user ? user.uid : 'user-test-001'); // Fallback to mock user for demo
+    });
+    return () => unsubscribeAuth();
+  }, []);
 
    useEffect(() => {
     if (!userId) {
@@ -53,27 +58,35 @@ export default function DashboardPage() {
       return;
     }
 
+    const transactionsCollection = getTransactionsCollection();
+    const documentsCollection = getDocumentsCollection();
+
     const transQuery = query(
-      collection(db, "transactions"),
+      transactionsCollection,
       where('userId', '==', userId),
       orderBy('date', 'desc')
     );
     
     const docQuery = query(
-      collection(db, "documents"),
+      documentsCollection,
       where('userId', '==', userId),
       orderBy('uploadDate', 'desc')
     );
 
     const unsubscribeTransactions = onSnapshot(transQuery, (snapshot) => {
-      const transactionData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Transaction[];
+      const transactionData = snapshot.docs.map(doc => doc.data() as Transaction);
       setTransactions(transactionData);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching transactions:", error);
       setLoading(false);
     });
 
     const unsubscribeDocuments = onSnapshot(docQuery, (snapshot) => {
-      const documentData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Document[];
+      const documentData = snapshot.docs.map(doc => doc.data() as Document);
       setDocuments(documentData);
+    }, (error) => {
+      console.error("Error fetching documents:", error);
     });
 
     return () => {
@@ -186,7 +199,7 @@ export default function DashboardPage() {
                     <FileText className="h-6 w-6 text-muted-foreground" />
                     <div className="flex-1">
                       <p className="font-medium text-sm truncate">{latestDocument.name}</p>
-                      <p className="text-xs text-muted-foreground">Processed on {latestDocument.uploadDate}</p>
+                      <p className="text-xs text-muted-foreground">Processed on {new Date(latestDocument.uploadDate).toLocaleDateString()}</p>
                     </div>
                      <Badge variant="default">Processed</Badge>
                   </div>
@@ -251,7 +264,11 @@ export default function DashboardPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {transactions.length > 0 ? (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="h-24 text-center">Loading...</TableCell>
+                </TableRow>
+              ) : transactions.length > 0 ? (
                 transactions.slice(0, 7).map((transaction) => (
                   <TableRow key={transaction.id}>
                     <TableCell>

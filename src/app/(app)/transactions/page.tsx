@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -36,11 +37,9 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { onSnapshot, query, where, orderBy, collection } from "firebase/firestore";
-import { db } from "@/lib/firebase/config";
-
-// MOCK USER ID
-const MOCK_USER_ID = "user-test-001";
+import { onSnapshot, query, where, orderBy } from "firebase/firestore";
+import { auth } from "@/lib/firebase/config";
+import { getTransactionsCollection } from "@/lib/firebase/collections";
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -48,7 +47,14 @@ export default function TransactionsPage() {
   const [filterType, setFilterType] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
   const [loading, setLoading] = useState(true);
-  const userId = MOCK_USER_ID;
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
+      setUserId(user ? user.uid : 'user-test-001'); // Fallback to mock user for demo
+    });
+    return () => unsubscribeAuth();
+  }, []);
 
   useEffect(() => {
     if (!userId) {
@@ -56,22 +62,20 @@ export default function TransactionsPage() {
       return;
     }
     
+    const transactionsCollection = getTransactionsCollection();
     const q = query(
-      collection(db, "transactions"),
+      transactionsCollection,
       where('userId', '==', userId),
       orderBy('date', 'desc')
     );
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const transactionData = snapshot.docs.map((doc) => {
-        return {
-          id: doc.id,
-          ...doc.data(),
-        } as Transaction;
-      });
-      
+      const transactionData = snapshot.docs.map((doc) => doc.data() as Transaction);
       setTransactions(transactionData);
       setLoading(false);
+    }, (error) => {
+        console.error("Error fetching transactions:", error);
+        setLoading(false);
     });
     
     return () => unsubscribe();
@@ -83,15 +87,15 @@ export default function TransactionsPage() {
       currency: "USD",
     }).format(amount);
   
-  const allCategories = [...new Set(transactions.map(t => t.category))];
+  const allCategories = useMemo(() => [...new Set(transactions.map(t => t.category))], [transactions]);
 
   // Filter transactions based on search and filters
-  const filteredTransactions = transactions.filter((transaction) => {
+  const filteredTransactions = useMemo(() => transactions.filter((transaction) => {
     const matchesSearch = transaction.merchant.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = filterType === "all" || transaction.type === filterType;
     const matchesCategory = filterCategory === "all" || transaction.category === filterCategory;
     return matchesSearch && matchesType && matchesCategory;
-  });
+  }), [transactions, searchTerm, filterType, filterCategory]);
 
   return (
     <Card>
@@ -156,7 +160,7 @@ export default function TransactionsPage() {
                   <TableCell>
                     <div className="font-medium">{transaction.merchant}</div>
                     <div className="text-sm text-muted-foreground md:hidden">
-                      {transaction.date}
+                      {new Date(transaction.date).toLocaleDateString()}
                     </div>
                   </TableCell>
                   <TableCell className="hidden sm:table-cell capitalize">
@@ -166,7 +170,7 @@ export default function TransactionsPage() {
                     <Badge variant="outline">{transaction.category}</Badge>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
-                    {transaction.date}
+                    {new Date(transaction.date).toLocaleDateString()}
                   </TableCell>
                   <TableCell
                     className={`text-right font-semibold ${
@@ -186,7 +190,7 @@ export default function TransactionsPage() {
                   colSpan={5}
                   className="h-24 text-center text-muted-foreground"
                 >
-                  No transactions yet.
+                  No transactions found. Upload a document to get started.
                 </TableCell>
               </TableRow>
             )}

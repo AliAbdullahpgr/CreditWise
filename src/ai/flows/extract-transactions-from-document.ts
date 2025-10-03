@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI flow for extracting multiple transactions from a document.
@@ -10,16 +11,14 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { saveTransactions, updateDocumentStatus } from '@/lib/firebase/firestore';
-import { Transaction } from '@/lib/types';
-
 
 const TransactionSchema = z.object({
-  id: z.string().describe('A unique identifier for the transaction.'),
+  id: z.string().describe('A unique identifier for the transaction (e.g., a UUID).'),
   date: z.string().describe('The date of the transaction (e.g., YYYY-MM-DD).'),
   merchant: z.string().describe('The name of the client or merchant.'),
   amount: z.number().describe('The transaction amount. Negative for purchases/transfers out, positive for deposits/transfers in.'),
   type: z.enum(['income', 'expense']).describe('The type of transaction.'),
-  category: z.string().describe('A suitable category for the transaction (e.g., Purchase, Deposit, Transfer).'),
+  category: z.string().describe('A suitable category for the transaction (e.g., Purchase, Deposit, Transfer, Gig Work, Utilities).'),
   status: z.enum(['cleared', 'pending']).default('cleared'),
 });
 
@@ -39,8 +38,9 @@ const extractTransactionsPrompt = ai.definePrompt({
   output: { schema: ExtractTransactionsFromDocumentOutputSchema },
   prompt: `You are an expert at extracting structured transaction data from OCR text from a document.
   
-  Analyze the following document and extract all transactions.
-  For each transaction, determine if it is 'income' or 'expense' based on the amount and type.
+  Analyze the following document and extract all transactions. Do not include summary totals.
+  For each transaction, determine if it is 'income' or 'expense' based on the amount and description.
+  Assign a unique ID to each transaction.
   'Purchase' types or negative amounts are 'expense'. 'Deposit' types or positive amounts are 'income'.
   For 'Transfer' types, use the amount sign to determine if it is income or expense.
 
@@ -71,18 +71,21 @@ export async function extractTransactionsFromDocument(
    try {
     const output = await extractTransactionsFlow(input);
     
+    // Assign UUIDs if AI didn't provide them
+    const transactionsWithIds = output.transactions.map(t => ({...t, id: t.id || crypto.randomUUID()}));
+
     // Save transactions to Firestore
-    if (userId && output.transactions.length > 0) {
-      const transactionsWithIds = output.transactions.map(t => ({...t, id: t.id || crypto.randomUUID()})) as Transaction[]
+    if (userId && transactionsWithIds.length > 0) {
       await saveTransactions(userId, transactionsWithIds, documentId);
       
       // Update document status
       await updateDocumentStatus(
         documentId,
         'processed',
-        output.transactions.length
+        transactionsWithIds.length
       );
     } else {
+       // Still mark as processed even if no transactions found
        await updateDocumentStatus(
         documentId,
         'processed',
@@ -90,17 +93,19 @@ export async function extractTransactionsFromDocument(
       );
     }
     
-    return output;
+    return { transactions: transactionsWithIds };
   } catch (error) {
     // Update document with error status
     if (documentId) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown AI processing error';
       await updateDocumentStatus(
         documentId,
         'failed',
         0,
-        error instanceof Error ? error.message : 'Unknown error'
+        errorMessage
       );
     }
+    // Re-throw the error to be caught by the client
     throw error;
   }
 }

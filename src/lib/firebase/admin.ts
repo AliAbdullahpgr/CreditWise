@@ -1,3 +1,4 @@
+
 'use server';
 
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
@@ -7,7 +8,7 @@ let adminApp: App;
 let adminDb: Firestore;
 
 // Initialize Firebase Admin SDK for server-side operations
-// This is a simplified check. In a real app, you might need more robust initialization logic.
+// A simplified check to prevent re-initialization in hot-reload environments
 if (!getApps().some(app => app.name === '[DEFAULT]')) {
   adminApp = initializeApp({
     credential: cert({
@@ -18,9 +19,9 @@ if (!getApps().some(app => app.name === '[DEFAULT]')) {
   });
   adminDb = getFirestore(adminApp);
 } else {
+  // If already initialized, get the existing app
   adminApp = getApps().find(app => app.name === '[DEFAULT]')!;
   adminDb = getFirestore(adminApp);
 }
-
 
 export { adminApp, adminDb };

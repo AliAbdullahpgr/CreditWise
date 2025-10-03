@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from "react";
@@ -37,20 +36,46 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { onSnapshot, query, where, orderBy, collection } from "firebase/firestore";
+import { db } from "@/lib/firebase/config";
+
+// MOCK USER ID
+const MOCK_USER_ID = "user-test-001";
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const userId = MOCK_USER_ID;
 
   useEffect(() => {
-    // Client-side fetch from localStorage
-    const storedTransactions = localStorage.getItem("transactions");
-    if (storedTransactions) {
-      setTransactions(JSON.parse(storedTransactions));
+    if (!userId) {
+      setLoading(false);
+      return;
     }
-  }, []);
+    
+    const q = query(
+      collection(db, "transactions"),
+      where('userId', '==', userId),
+      orderBy('date', 'desc')
+    );
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const transactionData = snapshot.docs.map((doc) => {
+        return {
+          id: doc.id,
+          ...doc.data(),
+        } as Transaction;
+      });
+      
+      setTransactions(transactionData);
+      setLoading(false);
+    });
+    
+    return () => unsubscribe();
+  }, [userId]);
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat("en-US", {
@@ -116,7 +141,16 @@ export default function TransactionsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredTransactions.length > 0 ? (
+             {loading ? (
+                 <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="h-24 text-center text-muted-foreground"
+                  >
+                    Loading transactions...
+                  </TableCell>
+                </TableRow>
+              ) : filteredTransactions.length > 0 ? (
               filteredTransactions.map((transaction) => (
                 <TableRow key={transaction.id}>
                   <TableCell>

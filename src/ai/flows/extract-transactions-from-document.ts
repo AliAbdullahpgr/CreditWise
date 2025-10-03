@@ -9,6 +9,9 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
+import { saveTransactions, updateDocumentStatus } from '@/lib/firebase/firestore';
+import { Transaction } from '@/lib/types';
+
 
 const TransactionSchema = z.object({
   id: z.string().describe('A unique identifier for the transaction.'),
@@ -61,7 +64,43 @@ const extractTransactionsFlow = ai.defineFlow(
 );
 
 export async function extractTransactionsFromDocument(
-  input: ExtractTransactionsFromDocumentInput
+  input: ExtractTransactionsFromDocumentInput,
+  userId: string,
+  documentId: string
 ): Promise<ExtractTransactionsFromDocumentOutput> {
-  return extractTransactionsFlow(input);
+   try {
+    const output = await extractTransactionsFlow(input);
+    
+    // Save transactions to Firestore
+    if (userId && output.transactions.length > 0) {
+      const transactionsWithIds = output.transactions.map(t => ({...t, id: t.id || crypto.randomUUID()})) as Transaction[]
+      await saveTransactions(userId, transactionsWithIds, documentId);
+      
+      // Update document status
+      await updateDocumentStatus(
+        documentId,
+        'processed',
+        output.transactions.length
+      );
+    } else {
+       await updateDocumentStatus(
+        documentId,
+        'processed',
+        0
+      );
+    }
+    
+    return output;
+  } catch (error) {
+    // Update document with error status
+    if (documentId) {
+      await updateDocumentStatus(
+        documentId,
+        'failed',
+        0,
+        error instanceof Error ? error.message : 'Unknown error'
+      );
+    }
+    throw error;
+  }
 }

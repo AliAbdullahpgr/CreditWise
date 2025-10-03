@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -23,8 +22,8 @@ import { ScoreGauge } from "@/components/score-gauge";
 import { ExpenseChart, ScoreHistoryChart } from "@/components/charts";
 import { AlternativeCreditScoreInfo } from "@/components/alternative-credit-info";
 import { ScoreBreakdown } from "@/components/score-breakdown";
-import { userFinancials, documents } from "@/lib/data";
-import { Transaction } from '@/lib/types';
+import { userFinancials, documents as initialDocuments } from "@/lib/data";
+import { Transaction, Document } from '@/lib/types';
 import {
   ArrowUpRight,
   ArrowDownLeft,
@@ -35,17 +34,53 @@ import {
   FileText,
 } from "lucide-react";
 import Link from "next/link";
+import { onSnapshot, query, where, orderBy, collection } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
+import { transactionsCollection, documentsCollection } from '@/lib/firebase/collections';
+
+// MOCK USER ID
+const MOCK_USER_ID = "user-test-001";
 
 export default function DashboardPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
+  const userId = MOCK_USER_ID;
 
-  useEffect(() => {
-    // Client-side fetch from localStorage
-    const storedTransactions = localStorage.getItem("transactions");
-    if (storedTransactions) {
-      setTransactions(JSON.parse(storedTransactions));
+   useEffect(() => {
+    if (!userId) {
+      setLoading(false);
+      return;
     }
-  }, []);
+
+    const transQuery = query(
+      collection(db, "transactions"),
+      where('userId', '==', userId),
+      orderBy('date', 'desc')
+    );
+    
+    const docQuery = query(
+      collection(db, "documents"),
+      where('userId', '==', userId),
+      orderBy('uploadDate', 'desc')
+    );
+
+    const unsubscribeTransactions = onSnapshot(transQuery, (snapshot) => {
+      const transactionData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Transaction[];
+      setTransactions(transactionData);
+      setLoading(false);
+    });
+
+    const unsubscribeDocuments = onSnapshot(docQuery, (snapshot) => {
+      const documentData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Document[];
+      setDocuments(documentData);
+    });
+
+    return () => {
+      unsubscribeTransactions();
+      unsubscribeDocuments();
+    };
+  }, [userId]);
 
 
   const formatCurrency = (amount: number) =>

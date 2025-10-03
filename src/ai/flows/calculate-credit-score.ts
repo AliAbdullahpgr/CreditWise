@@ -36,6 +36,9 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { saveCreditReport } from '@/lib/firebase/firestore';
+import { CreditReport } from '@/lib/types';
+import {z as zod} from 'zod';
 
 const CalculateCreditScoreInputSchema = z.object({
   billPaymentHistory: z
@@ -73,6 +76,75 @@ const CalculateCreditScoreInputSchema = z.object({
     .describe(
       'Variety of income sources and transaction types (0-100). Weight: 10%. Shows diversified income.'
     ),
+  transactions: zod.array(zod.any()).optional(),
+});
+export type CalculateCreditScoreInput = z.infer<typeof CalculateCreditScoreInputSchema>;
+
+const CalculateCreditScoreOutputSchema = z.object({
+  creditScore: z
+    .number()
+    .min(0)
+    .max(1000)
+    .describe('Alternative Credit Score (0-1000) for informal economy workers.'),
+  riskGrade: z
+    .string()
+    .describe(
+      'Risk grade: A (800+), B+ (700-799), B (600-699), C (500-599), D (<500)'
+    ),
+  scoreBreakdown: z
+    .string()
+    .describe('Detailed breakdown showing how each factor contributed to the final score.'),
+  recommendations: z
+    .string()
+    .describe('Personalized recommendations for improving the alternative credit score.'),
+  scoreType: z
+    .string()
+...
+  'use server';
+
+import {ai} from '@/ai/genkit';
+import {z} from 'genkit';
+import { saveCreditReport } from '@/lib/firebase/firestore';
+import { CreditReport } from '@/lib/types';
+import {z as zod} from 'zod';
+
+const CalculateCreditScoreInputSchema = z.object({
+  billPaymentHistory: z
+    .number()
+    .min(0)
+    .max(100)
+    .describe(
+      'Payment history for rent, utilities, mobile bills (0-100). Weight: 30%. Most important factor.'
+    ),
+  incomeConsistency: z
+    .number()
+    .min(0)
+    .max(100)
+    .describe(
+      'Regularity and consistency of income patterns (0-100). Weight: 25%. Measures earning stability.'
+    ),
+  expenseManagement: z
+    .number()
+    .min(0)
+    .max(100)
+    .describe(
+      'Expense-to-income ratio and savings behavior (0-100). Weight: 20%. Shows financial discipline.'
+    ),
+  financialGrowth: z
+    .number()
+    .min(0)
+    .max(100)
+    .describe(
+      'Income growth trend over 3-6 months (0-100). Weight: 15%. Indicates improving financial health.'
+    ),
+  transactionDiversity: z
+    .number()
+    .min(0)
+    .max(100)
+    .describe(
+      'Variety of income sources and transaction types (0-100). Weight: 10%. Shows diversified income.'
+    ),
+  transactions: zod.array(zod.any()).optional(),
 });
 export type CalculateCreditScoreInput = z.infer<typeof CalculateCreditScoreInputSchema>;
 
@@ -100,12 +172,6 @@ const CalculateCreditScoreOutputSchema = z.object({
 });
 export type CalculateCreditScoreOutput = z.infer<typeof CalculateCreditScoreOutputSchema>;
 
-export async function calculateCreditScore(
-  input: CalculateCreditScoreInput
-): Promise<CalculateCreditScoreOutput> {
-  return calculateCreditScoreFlow(input);
-}
-
 const prompt = ai.definePrompt({
   name: 'calculateCreditScorePrompt',
   input: {schema: CalculateCreditScoreInputSchema},
@@ -125,7 +191,7 @@ const prompt = ai.definePrompt({
   Scoring Factors (0-1000 scale):
   1. Bill Payment History (30%): Rent, utilities, mobile bills - on-time payment patterns
   2. Income Consistency (25%): Regular earning patterns, variance in monthly income
-  3. Expense Management (20%): Expense-to-income ratio, savings behavior, financial discipline
+  3. Expense Management (20%): Spending discipline & savings behavior, financial discipline
   4. Financial Growth (15%): Income trend over 3-6 months, positive trajectory
   5. Transaction Diversity (10%): Variety of income sources, transaction types
 
@@ -175,3 +241,33 @@ const calculateCreditScoreFlow = ai.defineFlow(
     return output!;
   }
 );
+
+
+export async function calculateCreditScore(
+  input: CalculateCreditScoreInput,
+  userId: string  // Add this parameter
+): Promise<CalculateCreditScoreOutput> {
+  const output = await calculateCreditScoreFlow(input);
+  
+  // Save credit report to Firestore
+  if (userId) {
+    const report: CreditReport = {
+      id: crypto.randomUUID(),
+      generationDate: new Date().toISOString(),
+      score: output.creditScore,
+      grade: output.riskGrade as 'A' | 'B' | 'C' | 'D',
+      url: '', // Generate PDF and upload to Storage if needed
+    };
+    
+    await saveCreditReport(
+      userId,
+      report,
+      {}, // factors
+      input.transactions?.length || 0,
+      input.transactions?.[0]?.date || '',
+      input.transactions?.[input.transactions?.length - 1]?.date || ''
+    );
+  }
+  
+  return output;
+}

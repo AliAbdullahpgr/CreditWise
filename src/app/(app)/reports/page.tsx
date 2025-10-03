@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import {
   Card,
   CardContent,
@@ -15,7 +18,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { creditReports } from "@/lib/data";
+import { CreditReport } from "@/lib/types";
 import { PlusCircle, Share2, Download, Eye } from "lucide-react";
 import {
   DropdownMenu,
@@ -24,8 +27,39 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
+import { onSnapshot, query, where, orderBy, collection } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
+
+// MOCK USER ID
+const MOCK_USER_ID = "user-test-001";
 
 export default function ReportsPage() {
+  const [creditReports, setCreditReports] = useState<CreditReport[]>([]);
+  const [loading, setLoading] = useState(true);
+  const userId = MOCK_USER_ID;
+
+  useEffect(() => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
+    const q = query(
+      collection(db, "creditReports"),
+      where('userId', '==', userId),
+      orderBy('generationDate', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const reportData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as CreditReport[];
+      setCreditReports(reportData);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [userId]);
+
+
   return (
     <div className="space-y-8">
       <Card>
@@ -55,14 +89,23 @@ export default function ReportsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {creditReports.length > 0 ? (
+              {loading ? (
+                 <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="h-24 text-center text-muted-foreground"
+                  >
+                    Loading reports...
+                  </TableCell>
+                </TableRow>
+              ) : creditReports.length > 0 ? (
                 creditReports.map((report) => (
                   <TableRow key={report.id}>
                     <TableCell className="font-mono text-sm">
-                      {report.id}
+                      {report.id.substring(0, 12)}...
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">
-                      {report.generationDate}
+                      {new Date(report.generationDate).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="hidden md:table-cell font-semibold">
                       {report.score}

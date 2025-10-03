@@ -35,7 +35,7 @@ import { Progress } from '@/components/ui/progress';
 import { extractTransactionsFromDocument } from '@/ai/flows/extract-transactions-from-document';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '@/lib/firebase/config';
-import { createDocument } from '@/lib/firebase/firestore';
+import { createDocument, updateDocumentStatus } from '@/lib/firebase/firestore';
 import { onSnapshot, query, where, orderBy } from 'firebase/firestore';
 import { getDocumentsCollection } from '@/lib/firebase/collections';
 
@@ -129,64 +129,65 @@ export default function DocumentsPage() {
       });
       return;
     }
-
+  
     setIsUploading(true);
     setUploadProgress(0);
-
+  
     for (let i = 0; i < filesToUpload.length; i++) {
       const file = filesToUpload[i];
       let docId = '';
-
+  
       try {
-        // 1. Create a placeholder document in Firestore to get an ID and show 'pending' state
+        // 1. Create placeholder document in Firestore
         const newDoc: Omit<Document, 'id'> = {
-            name: file.name,
-            uploadDate: new Date().toISOString(),
-            type: file.type.startsWith('image/') ? 'receipt' : 'utility bill',
-            status: 'pending',
+          name: file.name,
+          uploadDate: new Date().toISOString(),
+          type: file.type.startsWith('image/') ? 'receipt' : 'utility bill',
+          status: 'pending',
         };
-        // This is a temporary client-side update for immediate feedback
-        setDocuments(prev => [ { ...newDoc, id: `temp-${Date.now()}`}, ...prev]);
-
-        // 2. Upload to Firebase Storage
+  
         const storageRef = ref(storage, `documents/${userId}/${Date.now()}_${file.name}`);
         await uploadBytes(storageRef, file);
         const downloadUrl = await getDownloadURL(storageRef);
-
-        // 3. Create the actual document record in Firestore
-        docId = await createDocument(
-          userId,
-          newDoc,
-          downloadUrl
-        );
-
-        // 4. Convert file to data URI for AI processing
-        const dataUri = await fileToDataUri(file);
-        
-        // 5. Call AI extraction flow (now includes userId and documentId)
-        await extractTransactionsFromDocument(
-          { document: dataUri },
-          userId,
-          docId
-        );
-        // Real-time listener will automatically update the UI to 'processed'
-
-      } catch (error) {
-        console.error("Upload and processing failed for", file.name, error);
-         toast({
+  
+        docId = await createDocument(userId, newDoc, downloadUrl);
+  
+        // 2. Call AI flow in a separate try/catch to handle processing errors
+        try {
+          const dataUri = await fileToDataUri(file);
+          await extractTransactionsFromDocument({ document: dataUri }, userId, docId);
+          // Firestore listener will update the status to 'processed'
+        } catch (aiError) {
+          console.error("AI processing failed for", file.name, aiError);
+          const errorMessage = aiError instanceof Error ? aiError.message : 'Unknown AI processing error';
+          await updateDocumentStatus(docId, 'failed', 0, errorMessage);
+          toast({
+            variant: "destructive",
+            title: "AI Processing Failed",
+            description: `Could not process ${file.name}: ${errorMessage}`,
+          });
+        }
+  
+      } catch (uploadError) {
+        console.error("Upload failed for", file.name, uploadError);
+        // If docId was created, update its status to 'failed'
+        if (docId) {
+          const errorMessage = uploadError instanceof Error ? uploadError.message : 'Unknown upload error';
+          await updateDocumentStatus(docId, 'failed', 0, `Upload failed: ${errorMessage}`);
+        }
+        toast({
           variant: "destructive",
-          title: "Processing Failed",
-          description: `Could not process ${file.name}.`,
+          title: "Upload Failed",
+          description: `Could not upload ${file.name}. Please try again.`,
         });
-        // If docId was created, you might want to update its status to 'failed' here
       }
-      
+  
       setUploadProgress(((i + 1) / filesToUpload.length) * 100);
     }
-    
+  
     setIsUploading(false);
     setFilesToUpload([]);
-
+  
     toast({
       title: 'Upload complete',
       description: `${filesToUpload.length} document(s) have been sent for processing.`,

@@ -9,7 +9,11 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
-
+.github
+.yarnrc.yml
+.yarnclean
+.pnpmfile.cjs
+.pnpm-lock.yaml
 # testing
 /coverage
 

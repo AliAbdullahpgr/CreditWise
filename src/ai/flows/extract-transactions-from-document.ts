@@ -68,42 +68,69 @@ export async function extractTransactionsFromDocument(
   userId: string,
   documentId: string
 ): Promise<ExtractTransactionsFromDocumentOutput> {
+   console.log('\n🤖 [AI FLOW START] Extract transactions from document');
+   console.log('👤 [USER ID]', userId);
+   console.log('📝 [DOCUMENT ID]', documentId);
+   console.log('📸 [INPUT] Data URI length:', input.document.length, 'chars');
+   
    try {
+    console.log('🧠 [GEMINI] Sending request to Google Gemini AI...');
+    const startTime = Date.now();
     const output = await extractTransactionsFlow(input);
+    const endTime = Date.now();
+    console.log('✅ [GEMINI] AI response received in', (endTime - startTime) / 1000, 'seconds');
+    console.log('📊 [AI OUTPUT] Raw transactions count:', output.transactions.length);
     
     // Assign UUIDs if AI didn't provide them
-    const transactionsWithIds = output.transactions.map(t => ({...t, id: t.id || crypto.randomUUID()}));
+    console.log('🎯 [PROCESSING] Assigning UUIDs to transactions...');
+    const transactionsWithIds = output.transactions.map((t, index) => {
+      const txId = t.id || crypto.randomUUID();
+      console.log(`  • Transaction ${index + 1}: ${t.merchant} - $${t.amount} (${t.type})`);
+      return {...t, id: txId};
+    });
 
     // Save transactions to Firestore
     if (userId && transactionsWithIds.length > 0) {
+      console.log('💾 [FIRESTORE] Saving', transactionsWithIds.length, 'transaction(s) to Firestore...');
       await saveTransactions(userId, transactionsWithIds, documentId);
+      console.log('✅ [FIRESTORE] Transactions saved successfully');
       
       // Update document status
+      console.log('📋 [STATUS UPDATE] Marking document as processed...');
       await updateDocumentStatus(
         documentId,
         'processed',
         transactionsWithIds.length
       );
+      console.log('✅ [STATUS UPDATE] Document marked as processed with', transactionsWithIds.length, 'transactions');
     } else {
        // Still mark as processed even if no transactions found
+       console.log('⚠️ [NO TRANSACTIONS] No transactions extracted, marking as processed anyway');
        await updateDocumentStatus(
         documentId,
         'processed',
         0
       );
+      console.log('✅ [STATUS UPDATE] Document marked as processed with 0 transactions');
     }
     
+    console.log('✅ [AI FLOW COMPLETE] Returning', transactionsWithIds.length, 'transaction(s)');
     return { transactions: transactionsWithIds };
   } catch (error) {
+    console.error('❌ [AI FLOW ERROR] Processing failed');
+    console.error('🔍 [ERROR DETAILS]', error);
+    
     // Update document with error status
     if (documentId) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown AI processing error';
+      console.log('⚠️ [ERROR RECOVERY] Updating document status to failed...');
       await updateDocumentStatus(
         documentId,
         'failed',
         0,
         errorMessage
       );
+      console.log('❌ [STATUS UPDATE] Document marked as failed:', errorMessage);
     }
     // Re-throw the error to be caught by the client
     throw error;

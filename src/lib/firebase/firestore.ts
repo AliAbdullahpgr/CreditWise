@@ -15,11 +15,17 @@ export async function saveTransactions(
   transactions: Transaction[],
   sourceDocumentId?: string
 ): Promise<void> {
+  console.log('\n💾 [FIRESTORE] saveTransactions called');
+  console.log('👤 [USER ID]', userId);
+  console.log('📊 [COUNT]', transactions.length, 'transaction(s)');
+  console.log('📝 [SOURCE DOC]', sourceDocumentId || 'none');
+  
   const batch = adminDb.batch();
   const now = new Date();
 
-  transactions.forEach((transaction) => {
+  transactions.forEach((transaction, index) => {
     const docRef = adminDb.collection('transactions').doc(transaction.id);
+    console.log(`  ${index + 1}. Adding to batch: ${transaction.merchant} - $${transaction.amount}`);
     const firestoreData: Omit<FirestoreTransaction, 'id'> & { id?: string } = {
       ...transaction,
       userId,
@@ -32,7 +38,9 @@ export async function saveTransactions(
     batch.set(docRef, firestoreData);
   });
 
+  console.log('🚀 [BATCH WRITE] Committing batch write to Firestore...');
   await batch.commit();
+  console.log('✅ [BATCH WRITE] All transactions saved successfully');
 }
 
 // ==================== DOCUMENTS ====================
@@ -45,6 +53,11 @@ export async function createDocument(
   document: Omit<Document, 'id'>,
   storageUrl: string
 ): Promise<string> {
+  console.log('\n💾 [FIRESTORE] createDocument called');
+  console.log('👤 [USER ID]', userId);
+  console.log('📄 [DOC NAME]', document.name);
+  console.log('📌 [DOC TYPE]', document.type);
+  
   const docRef = adminDb.collection('documents').doc();
   const now = new Date();
 
@@ -57,7 +70,10 @@ export async function createDocument(
     createdAt: now,
   };
 
+  console.log('🎯 [FIRESTORE ID]', docRef.id);
+  console.log('🚀 [WRITING] Saving document to Firestore...');
   await docRef.set(firestoreData);
+  console.log('✅ [CREATED] Document record created in Firestore');
   return docRef.id;
 }
 
@@ -70,6 +86,12 @@ export async function updateDocumentStatus(
   extractedTransactionCount?: number,
   errorMessage?: string
 ): Promise<void> {
+  console.log('\n📋 [FIRESTORE] updateDocumentStatus called');
+  console.log('🎯 [DOC ID]', documentId);
+  console.log('📈 [STATUS]', status);
+  console.log('📊 [TX COUNT]', extractedTransactionCount ?? 'not provided');
+  if (errorMessage) console.log('❌ [ERROR]', errorMessage);
+  
   const updates: Record<string, any> = {
     status,
     processedAt: new Date(),
@@ -83,7 +105,9 @@ export async function updateDocumentStatus(
     updates.errorMessage = errorMessage;
   }
 
+  console.log('🚀 [UPDATING] Updating document in Firestore...');
   await adminDb.collection('documents').doc(documentId).update(updates);
+  console.log('✅ [UPDATED] Document status updated to:', status);
 }
 
 // ==================== CREDIT REPORTS ====================

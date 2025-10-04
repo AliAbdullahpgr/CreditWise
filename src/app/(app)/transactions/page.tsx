@@ -62,6 +62,9 @@ export default function TransactionsPage() {
       return;
     }
     
+    console.log('\n🔔 [TRANSACTIONS LISTENER] Setting up real-time listener for transactions');
+    console.log('👤 [USER ID]', userId);
+    
     const transactionsCollection = getTransactionsCollection();
     const q = query(
       transactionsCollection,
@@ -70,15 +73,25 @@ export default function TransactionsPage() {
     );
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const transactionData = snapshot.docs.map((doc) => doc.data() as Transaction);
+      console.log('🔔 [REAL-TIME UPDATE] Transactions collection changed!');
+      console.log('📊 [COUNT]', snapshot.docs.length, 'transaction(s) found');
+      const transactionData = snapshot.docs.map((doc, index) => {
+        const data = doc.data() as Transaction;
+        console.log(`  ${index + 1}. ${data.merchant} - $${data.amount} (${data.type})`);
+        return data;
+      });
       setTransactions(transactionData);
       setLoading(false);
+      console.log('✅ [UI UPDATE] Transactions state updated in UI');
     }, (error) => {
-        console.error("Error fetching transactions:", error);
+        console.error("❌ [LISTENER ERROR] Error fetching transactions:", error);
         setLoading(false);
     });
     
-    return () => unsubscribe();
+    return () => {
+      console.log('🔌 [CLEANUP] Unsubscribing from transactions listener');
+      unsubscribe();
+    };
   }, [userId]);
 
   const formatCurrency = (amount: number) =>

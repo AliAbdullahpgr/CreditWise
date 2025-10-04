@@ -33,8 +33,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { extractTransactionsFromDocument } from '@/ai/flows/extract-transactions-from-document';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage, auth } from '@/lib/firebase/config';
+import { auth } from '@/lib/firebase/config';
 import { createDocument } from '@/lib/firebase/firestore';
 import { onSnapshot, query, where, orderBy } from 'firebase/firestore';
 import { getDocumentsCollection } from '@/lib/firebase/collections';
@@ -59,6 +58,9 @@ export default function DocumentsPage() {
   useEffect(() => {
     if (!userId) return;
 
+    console.log('\n🔔 [LISTENER] Setting up real-time listener for documents');
+    console.log('👤 [USER ID]', userId);
+
     const documentsCollection = getDocumentsCollection();
     const q = query(
       documentsCollection,
@@ -67,10 +69,17 @@ export default function DocumentsPage() {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const documentData = snapshot.docs.map(doc => doc.data() as Document);
+      console.log('🔔 [REAL-TIME UPDATE] Documents collection changed!');
+      console.log('📊 [COUNT]', snapshot.docs.length, 'document(s) found');
+      const documentData = snapshot.docs.map((doc, index) => {
+        const data = doc.data() as Document;
+        console.log(`  ${index + 1}. ${data.name} - Status: ${data.status}`);
+        return data;
+      });
       setDocuments(documentData);
+      console.log('✅ [UI UPDATE] Documents state updated');
     }, (error) => {
-        console.error("Error fetching documents:", error);
+        console.error("❌ [LISTENER ERROR] Error fetching documents:", error);
         toast({
             variant: "destructive",
             title: "Could not load documents",
@@ -78,7 +87,10 @@ export default function DocumentsPage() {
         });
     });
 
-    return () => unsubscribe();
+    return () => {
+      console.log('🔌 [CLEANUP] Unsubscribing from documents listener');
+      unsubscribe();
+    };
   }, [userId, toast]);
 
 
@@ -130,6 +142,8 @@ export default function DocumentsPage() {
       return;
     }
 
+    console.log('🚀 [UPLOAD START] Starting upload process for', filesToUpload.length, 'file(s)');
+    console.log('👤 [USER ID]', userId);
     setIsUploading(true);
     setUploadProgress(0);
 
@@ -137,8 +151,12 @@ export default function DocumentsPage() {
       const file = filesToUpload[i];
       let docId = '';
 
+      console.log(`\n📄 [FILE ${i + 1}/${filesToUpload.length}] Processing: ${file.name}`);
+      console.log('📊 [FILE INFO] Size:', (file.size / 1024).toFixed(2), 'KB, Type:', file.type);
+
       try {
         // 1. Create a placeholder document in Firestore to get an ID and show 'pending' state
+        console.log('⚡ [STEP 1] Creating temporary UI placeholder...');
         const newDoc: Omit<Document, 'id'> = {
             name: file.name,
             uploadDate: new Date().toISOString(),
@@ -147,43 +165,64 @@ export default function DocumentsPage() {
         };
         // This is a temporary client-side update for immediate feedback
         setDocuments(prev => [ { ...newDoc, id: `temp-${Date.now()}`}, ...prev]);
+        console.log('✅ [STEP 1] Temporary document shown in UI with status: pending');
 
-        // 2. Upload to Firebase Storage
-        const storageRef = ref(storage, `documents/${userId}/${Date.now()}_${file.name}`);
-        await uploadBytes(storageRef, file);
-        const downloadUrl = await getDownloadURL(storageRef);
+        // 2. Skip Firebase Storage (requires paid plan) - Use placeholder URL
+        console.log('⚠️ [STEP 2] Skipping Firebase Storage (requires Blaze plan)');
+        console.log('📝 [PLACEHOLDER] Using placeholder URL instead of real storage');
+        const storagePath = `documents/${userId}/${Date.now()}_${file.name}`;
+        const downloadUrl = `placeholder://no-storage/${storagePath}`;
+        console.log('✅ [STEP 2] Placeholder URL created:', downloadUrl.substring(0, 50) + '...');
 
         // 3. Create the actual document record in Firestore
+        console.log('💾 [STEP 3] Creating document record in Firestore...');
         docId = await createDocument(
           userId,
           newDoc,
           downloadUrl
         );
+        console.log('✅ [STEP 3] Document created in Firestore with ID:', docId);
+        console.log('📋 [STATUS] Document status: pending');
 
         // 4. Convert file to data URI for AI processing
+        console.log('🔄 [STEP 4] Converting file to base64 data URI...');
         const dataUri = await fileToDataUri(file);
+        console.log('✅ [STEP 4] File converted to data URI, length:', dataUri.length, 'chars');
         
         // 5. Call AI extraction flow (now includes userId and documentId)
-        await extractTransactionsFromDocument(
+        console.log('🤖 [STEP 5] Calling Gemini AI to extract transactions...');
+        console.log('⏳ [PROCESSING] This may take 5-15 seconds...');
+        const result = await extractTransactionsFromDocument(
           { document: dataUri },
           userId,
           docId
         );
+        console.log('✅ [STEP 5] AI processing complete!');
+        console.log('📊 [RESULT] Extracted', result.transactions.length, 'transaction(s)');
         // Real-time listener will automatically update the UI to 'processed'
+        console.log('🔔 [REAL-TIME] Firestore listeners will auto-update UI');
 
       } catch (error) {
-        console.error("Upload and processing failed for", file.name, error);
+        console.error('❌ [ERROR] Upload and processing failed for', file.name);
+        console.error('🔍 [ERROR DETAILS]', error);
          toast({
           variant: "destructive",
           title: "Processing Failed",
           description: `Could not process ${file.name}.`,
         });
         // If docId was created, you might want to update its status to 'failed' here
+        if (docId) {
+          console.log('⚠️ [CLEANUP] Document ID exists:', docId, '- status should be updated to failed');
+        }
       }
       
-      setUploadProgress(((i + 1) / filesToUpload.length) * 100);
+      const progress = ((i + 1) / filesToUpload.length) * 100;
+      setUploadProgress(progress);
+      console.log('📈 [PROGRESS]', progress.toFixed(0) + '%', `(${i + 1}/${filesToUpload.length} files)`);
     }
     
+    console.log('\n🎉 [COMPLETE] All uploads finished!');
+    console.log('📊 [SUMMARY] Processed', filesToUpload.length, 'file(s)');
     setIsUploading(false);
     setFilesToUpload([]);
 

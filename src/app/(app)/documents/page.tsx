@@ -33,14 +33,9 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { extractTransactionsFromDocument } from '@/ai/flows/extract-transactions-from-document';
-<<<<<<< HEAD
-import { auth } from '@/lib/firebase/config';
-import { createDocument } from '@/lib/firebase/firestore';
-=======
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '@/lib/firebase/config';
 import { createDocument, updateDocumentStatus } from '@/lib/firebase/firestore';
->>>>>>> f8516fec2c6b734d771be07f56fee8517fc49f4d
 import { onSnapshot, query, where, orderBy } from 'firebase/firestore';
 import { getDocumentsCollection } from '@/lib/firebase/collections';
 
@@ -147,83 +142,22 @@ export default function DocumentsPage() {
       });
       return;
     }
-<<<<<<< HEAD
-
-    console.log('🚀 [UPLOAD START] Starting upload process for', filesToUpload.length, 'file(s)');
-    console.log('👤 [USER ID]', userId);
-=======
   
->>>>>>> f8516fec2c6b734d771be07f56fee8517fc49f4d
     setIsUploading(true);
     setUploadProgress(0);
   
     for (let i = 0; i < filesToUpload.length; i++) {
       const file = filesToUpload[i];
       let docId = '';
-<<<<<<< HEAD
-
-      console.log(`\n📄 [FILE ${i + 1}/${filesToUpload.length}] Processing: ${file.name}`);
-      console.log('📊 [FILE INFO] Size:', (file.size / 1024).toFixed(2), 'KB, Type:', file.type);
-
-      try {
-        // 1. Create a placeholder document in Firestore to get an ID and show 'pending' state
-        console.log('⚡ [STEP 1] Creating temporary UI placeholder...');
-=======
   
       try {
         // 1. Create placeholder document in Firestore
->>>>>>> f8516fec2c6b734d771be07f56fee8517fc49f4d
         const newDoc: Omit<Document, 'id'> = {
           name: file.name,
           uploadDate: new Date().toISOString(),
           type: file.type.startsWith('image/') ? 'receipt' : 'utility bill',
           status: 'pending',
         };
-<<<<<<< HEAD
-        // This is a temporary client-side update for immediate feedback
-        setDocuments(prev => [ { ...newDoc, id: `temp-${Date.now()}`}, ...prev]);
-        console.log('✅ [STEP 1] Temporary document shown in UI with status: pending');
-
-        // 2. Skip Firebase Storage (requires paid plan) - Use placeholder URL
-        console.log('⚠️ [STEP 2] Skipping Firebase Storage (requires Blaze plan)');
-        console.log('📝 [PLACEHOLDER] Using placeholder URL instead of real storage');
-        const storagePath = `documents/${userId}/${Date.now()}_${file.name}`;
-        const downloadUrl = `placeholder://no-storage/${storagePath}`;
-        console.log('✅ [STEP 2] Placeholder URL created:', downloadUrl.substring(0, 50) + '...');
-
-        // 3. Create the actual document record in Firestore
-        console.log('💾 [STEP 3] Creating document record in Firestore...');
-        docId = await createDocument(
-          userId,
-          newDoc,
-          downloadUrl
-        );
-        console.log('✅ [STEP 3] Document created in Firestore with ID:', docId);
-        console.log('📋 [STATUS] Document status: pending');
-
-        // 4. Convert file to data URI for AI processing
-        console.log('🔄 [STEP 4] Converting file to base64 data URI...');
-        const dataUri = await fileToDataUri(file);
-        console.log('✅ [STEP 4] File converted to data URI, length:', dataUri.length, 'chars');
-        
-        // 5. Call AI extraction flow (now includes userId and documentId)
-        console.log('🤖 [STEP 5] Calling Gemini AI to extract transactions...');
-        console.log('⏳ [PROCESSING] This may take 5-15 seconds...');
-        const result = await extractTransactionsFromDocument(
-          { document: dataUri },
-          userId,
-          docId
-        );
-        console.log('✅ [STEP 5] AI processing complete!');
-        console.log('📊 [RESULT] Extracted', result.transactions.length, 'transaction(s)');
-        // Real-time listener will automatically update the UI to 'processed'
-        console.log('🔔 [REAL-TIME] Firestore listeners will auto-update UI');
-
-      } catch (error) {
-        console.error('❌ [ERROR] Upload and processing failed for', file.name);
-        console.error('🔍 [ERROR DETAILS]', error);
-         toast({
-=======
   
         const storageRef = ref(storage, `documents/${userId}/${Date.now()}_${file.name}`);
         await uploadBytes(storageRef, file);
@@ -255,32 +189,15 @@ export default function DocumentsPage() {
           await updateDocumentStatus(docId, 'failed', 0, `Upload failed: ${errorMessage}`);
         }
         toast({
->>>>>>> f8516fec2c6b734d771be07f56fee8517fc49f4d
           variant: "destructive",
           title: "Upload Failed",
           description: `Could not upload ${file.name}. Please try again.`,
         });
-<<<<<<< HEAD
-        // If docId was created, you might want to update its status to 'failed' here
-        if (docId) {
-          console.log('⚠️ [CLEANUP] Document ID exists:', docId, '- status should be updated to failed');
-        }
-      }
-      
-      const progress = ((i + 1) / filesToUpload.length) * 100;
-      setUploadProgress(progress);
-      console.log('📈 [PROGRESS]', progress.toFixed(0) + '%', `(${i + 1}/${filesToUpload.length} files)`);
-    }
-    
-    console.log('\n🎉 [COMPLETE] All uploads finished!');
-    console.log('📊 [SUMMARY] Processed', filesToUpload.length, 'file(s)');
-=======
       }
   
       setUploadProgress(((i + 1) / filesToUpload.length) * 100);
     }
   
->>>>>>> f8516fec2c6b734d771be07f56fee8517fc49f4d
     setIsUploading(false);
     setFilesToUpload([]);
   

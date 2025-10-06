@@ -14,6 +14,8 @@
 .yarnclean
 .pnpmfile.cjs
 .pnpm-lock.yaml
+.github/*
+.github
 # testing
 /coverage
 

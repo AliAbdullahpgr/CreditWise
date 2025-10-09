@@ -39,11 +39,11 @@ export function ScoreGauge({ value, max = 1000 }: ScoreGaugeProps) {
   const offset = circumference - (animatedValue / max) * circumference;
 
   return (
-    <div className="relative w-48 h-48">
+    <div className="relative w-full max-w-[200px] aspect-square mx-auto">
       <svg className="w-full h-full" viewBox="0 0 120 120">
         <circle
           className="text-secondary"
-          strokeWidth="10"
+          strokeWidth="8"
           stroke="currentColor"
           fill="transparent"
           r="52"
@@ -52,7 +52,7 @@ export function ScoreGauge({ value, max = 1000 }: ScoreGaugeProps) {
         />
         <circle
           className="text-primary transition-all duration-1000 ease-out"
-          strokeWidth="10"
+          strokeWidth="8"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           strokeLinecap="round"
@@ -64,11 +64,13 @@ export function ScoreGauge({ value, max = 1000 }: ScoreGaugeProps) {
           transform="rotate(-90 60 60)"
         />
       </svg>
-      <div className="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center">
-        <span className="text-4xl font-bold font-headline text-foreground">
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-2xl sm:text-3xl lg:text-4xl font-bold font-headline text-foreground">
           {Math.round(animatedValue)}
         </span>
-        <span className={`text-lg font-semibold ${gradeColor}`}>
+        <span
+          className={`text-sm sm:text-base lg:text-lg font-semibold ${gradeColor}`}
+        >
           Grade {grade}
         </span>
       </div>

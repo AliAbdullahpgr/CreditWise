@@ -1,7 +1,6 @@
+"use client";
 
-'use client';
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -24,7 +23,7 @@ import { ExpenseChart, ScoreHistoryChart } from "@/components/charts";
 import { AlternativeCreditScoreInfo } from "@/components/alternative-credit-info";
 import { ScoreBreakdown } from "@/components/score-breakdown";
 import { userFinancials } from "@/lib/data";
-import { Transaction, Document } from '@/lib/types';
+import { Transaction, Document } from "@/lib/types";
 import {
   ArrowUpRight,
   ArrowDownLeft,
@@ -35,9 +34,12 @@ import {
   FileText,
 } from "lucide-react";
 import Link from "next/link";
-import { onSnapshot, query, where, orderBy } from 'firebase/firestore';
-import { auth } from '@/lib/firebase/config';
-import { getTransactionsCollection, getDocumentsCollection } from '@/lib/firebase/collections';
+import { onSnapshot, query, where, orderBy } from "firebase/firestore";
+import { auth } from "@/lib/firebase/config";
+import {
+  getTransactionsCollection,
+  getDocumentsCollection,
+} from "@/lib/firebase/collections";
 
 export default function DashboardPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -45,14 +47,14 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
 
-   useEffect(() => {
+  useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
-      setUserId(user ? user.uid : 'user-test-001'); // Fallback to mock user for demo
+      setUserId(user ? user.uid : "user-test-001"); // Fallback to mock user for demo
     });
     return () => unsubscribeAuth();
   }, []);
 
-   useEffect(() => {
+  useEffect(() => {
     if (!userId) {
       setLoading(false);
       return;
@@ -63,38 +65,47 @@ export default function DashboardPage() {
 
     const transQuery = query(
       transactionsCollection,
-      where('userId', '==', userId),
-      orderBy('date', 'desc')
+      where("userId", "==", userId),
+      orderBy("date", "desc"),
     );
-    
+
     const docQuery = query(
       documentsCollection,
-      where('userId', '==', userId),
-      orderBy('uploadDate', 'desc')
+      where("userId", "==", userId),
+      orderBy("uploadDate", "desc"),
     );
 
-    const unsubscribeTransactions = onSnapshot(transQuery, (snapshot) => {
-      const transactionData = snapshot.docs.map(doc => doc.data() as Transaction);
-      setTransactions(transactionData);
-      setLoading(false);
-    }, (error) => {
-      console.error("Error fetching transactions:", error);
-      setLoading(false);
-    });
+    const unsubscribeTransactions = onSnapshot(
+      transQuery,
+      (snapshot) => {
+        const transactionData = snapshot.docs.map(
+          (doc) => doc.data() as Transaction,
+        );
+        setTransactions(transactionData);
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Error fetching transactions:", error);
+        setLoading(false);
+      },
+    );
 
-    const unsubscribeDocuments = onSnapshot(docQuery, (snapshot) => {
-      const documentData = snapshot.docs.map(doc => doc.data() as Document);
-      setDocuments(documentData);
-    }, (error) => {
-      console.error("Error fetching documents:", error);
-    });
+    const unsubscribeDocuments = onSnapshot(
+      docQuery,
+      (snapshot) => {
+        const documentData = snapshot.docs.map((doc) => doc.data() as Document);
+        setDocuments(documentData);
+      },
+      (error) => {
+        console.error("Error fetching documents:", error);
+      },
+    );
 
     return () => {
       unsubscribeTransactions();
       unsubscribeDocuments();
     };
   }, [userId]);
-
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat("en-US", {
@@ -106,7 +117,7 @@ export default function DashboardPage() {
     .filter((d) => d.status === "processed")
     .sort(
       (a, b) =>
-        new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime()
+        new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime(),
     )[0];
 
   return (
@@ -118,7 +129,8 @@ export default function DashboardPage() {
               Alternative Credit Score
             </CardTitle>
             <CardDescription>
-              For informal economy workers • Updated: {new Date().toLocaleDateString()}
+              For informal economy workers • Updated:{" "}
+              {new Date().toLocaleDateString()}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex-1 flex items-center justify-center">
@@ -163,7 +175,9 @@ export default function DashboardPage() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Savings Rate</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Savings Rate
+              </CardTitle>
               <PiggyBank className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -189,23 +203,32 @@ export default function DashboardPage() {
               </p>
             </CardContent>
           </Card>
-           <Card className="col-span-2">
+          <Card className="col-span-2">
             <CardHeader>
-              <CardTitle className="text-base font-headline">Latest Processed Document</CardTitle>
+              <CardTitle className="text-base font-headline">
+                Latest Processed Document
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {latestDocument ? (
-                  <div className="flex items-center gap-3">
-                    <FileText className="h-6 w-6 text-muted-foreground" />
-                    <div className="flex-1">
-                      <p className="font-medium text-sm truncate">{latestDocument.name}</p>
-                      <p className="text-xs text-muted-foreground">Processed on {new Date(latestDocument.uploadDate).toLocaleDateString()}</p>
-                    </div>
-                     <Badge variant="default">Processed</Badge>
+                <div className="flex items-center gap-3">
+                  <FileText className="h-6 w-6 text-muted-foreground" />
+                  <div className="flex-1">
+                    <p className="font-medium text-sm truncate">
+                      {latestDocument.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Processed on{" "}
+                      {new Date(latestDocument.uploadDate).toLocaleDateString()}
+                    </p>
                   </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">No documents processed yet.</p>
-                )}
+                  <Badge variant="default">Processed</Badge>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No documents processed yet.
+                </p>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -249,9 +272,9 @@ export default function DashboardPage() {
               A list of your most recent income and expenses.
             </CardDescription>
           </div>
-           <Button size="sm" variant="outline" asChild>
-              <Link href="/transactions">View All</Link>
-            </Button>
+          <Button size="sm" variant="outline" asChild>
+            <Link href="/transactions">View All</Link>
+          </Button>
         </CardHeader>
         <CardContent>
           <Table>
@@ -266,7 +289,9 @@ export default function DashboardPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">Loading...</TableCell>
+                  <TableCell colSpan={4} className="h-24 text-center">
+                    Loading...
+                  </TableCell>
                 </TableRow>
               ) : transactions.length > 0 ? (
                 transactions.slice(0, 7).map((transaction) => (

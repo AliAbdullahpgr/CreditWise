@@ -1,4 +1,5 @@
 import { Wallet } from "lucide-react";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export default function Logo() {
   return (
@@ -6,6 +7,7 @@ export default function Logo() {
       {/* <Landmark className="h-6 w-6 text-primary" /> */}
       <Wallet className="h-6 w-6 text-primary" />
       <span className="font-bold text-xl font-headline">HisaabScore</span>
+      {/* <SidebarTrigger className="hidden md:flex" /> */}
     </div>
   );
 }

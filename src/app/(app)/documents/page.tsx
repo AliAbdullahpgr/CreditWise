@@ -33,8 +33,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { extractTransactionsFromDocument } from '@/ai/flows/extract-transactions-from-document';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage, auth } from '@/lib/firebase/config';
+import { auth } from '@/lib/firebase/config';
 import { createDocument, updateDocumentStatus } from '@/lib/firebase/firestore';
 import { onSnapshot, query, where, orderBy } from 'firebase/firestore';
 import { getDocumentsCollection } from '@/lib/firebase/collections';
@@ -152,20 +151,22 @@ export default function DocumentsPage() {
   
       try {
         // 1. Create placeholder document in Firestore
+        console.log(`\n📄 [FILE ${i + 1}/${filesToUpload.length}] Processing: ${file.name}`);
         const newDoc: Omit<Document, 'id'> = {
           name: file.name,
           uploadDate: new Date().toISOString(),
           type: file.type.startsWith('image/') ? 'receipt' : 'utility bill',
           status: 'pending',
         };
-  
-        const storageRef = ref(storage, `documents/${userId}/${Date.now()}_${file.name}`);
-        await uploadBytes(storageRef, file);
-        const downloadUrl = await getDownloadURL(storageRef);
-  
+
+        // Skip Firebase Storage (requires paid plan) - use placeholder URL
+        console.log('⚠️ [STORAGE SKIP] Using placeholder URL instead of Firebase Storage');
+        const storagePath = `documents/${userId}/${Date.now()}_${file.name}`;
+        const downloadUrl = `placeholder://no-storage/${storagePath}`;
+
+        console.log('💾 [FIRESTORE] Creating document record...');
         docId = await createDocument(userId, newDoc, downloadUrl);
-  
-        // 2. Call AI flow in a separate try/catch to handle processing errors
+        console.log('✅ [FIRESTORE] Document created with ID:', docId);        // 2. Call AI flow in a separate try/catch to handle processing errors
         try {
           const dataUri = await fileToDataUri(file);
           await extractTransactionsFromDocument({ document: dataUri }, userId, docId);

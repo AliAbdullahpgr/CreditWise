@@ -32,7 +32,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { saveCreditReport } from '@/lib/firebase/firestore';
-import { Transaction } from '@/lib/types';
+import { CreditReport, Transaction } from '@/lib/types';
 import {z as zod} from 'zod';
 
 const CalculateCreditScoreInputSchema = z.object({
@@ -177,7 +177,7 @@ export async function calculateCreditScore(
   const output = await calculateCreditScoreFlow(input);
   
   if (userId && output) {
-    const reportToSave = {
+    const reportToSave: Omit<CreditReport, 'id'> = {
       generationDate: new Date().toISOString(),
       score: output.creditScore,
       grade: output.riskGrade as 'A' | 'B' | 'C' | 'D',

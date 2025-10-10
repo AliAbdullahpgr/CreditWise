@@ -20,7 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CreditReport } from "@/lib/types";
-import { PlusCircle, Share2, Download, Eye } from "lucide-react";
+import { PlusCircle, Share2, Download, Eye, Loader2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,12 +30,15 @@ import {
 import { MoreHorizontal } from "lucide-react";
 import { onSnapshot, query, where, orderBy } from 'firebase/firestore';
 import { auth } from '@/lib/firebase/config';
-import { getCreditReportsCollection } from '@/lib/firebase/collections';
+import { getCreditReportsCollection, getTransactionsCollection } from '@/lib/firebase/collections';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ReportsPage() {
   const [creditReports, setCreditReports] = useState<CreditReport[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
@@ -68,6 +71,83 @@ export default function ReportsPage() {
 
     return () => unsubscribe();
   }, [userId]);
+  
+  const handleGenerateReport = async () => {
+    if (!userId) {
+      toast({
+        variant: 'destructive',
+        title: 'User not found',
+        description: 'You must be logged in to generate a report.',
+      });
+      return;
+    }
+
+    setIsGenerating(true);
+    toast({
+      title: 'Generating Report...',
+      description: 'This may take a minute. Please wait.',
+    });
+
+    try {
+      // Fetch all transactions for the user to generate the report
+      const transactionsCollection = getTransactionsCollection();
+      const transQuery = query(transactionsCollection, where('userId', '==', userId));
+      
+      let transactions: any[] = [];
+      const querySnapshot = await new Promise<any>((resolve, reject) => {
+        onSnapshot(transQuery, resolve, reject);
+      });
+      
+      querySnapshot.forEach((doc: any) => {
+        transactions.push(doc.data());
+      });
+
+      if (transactions.length === 0) {
+        toast({
+          variant: 'destructive',
+          title: 'Not Enough Data',
+          description: 'You need at least one transaction to generate a report.',
+        });
+        setIsGenerating(false);
+        return;
+      }
+
+      const response = await fetch('/api/generate-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactions, userId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate report');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `credit-report-${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      toast({
+        title: 'Report Generated!',
+        description: 'Your credit report has been downloaded.',
+      });
+
+    } catch (error) {
+      console.error('Error generating report:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Report Generation Failed',
+        description: error instanceof Error ? error.message : 'An unknown error occurred.',
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
 
   return (
@@ -80,9 +160,13 @@ export default function ReportsPage() {
               Generate and manage your credit reports to share with lenders.
             </CardDescription>
           </div>
-          <Button disabled>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Generate New Report (Soon)
+          <Button onClick={handleGenerateReport} disabled={isGenerating}>
+            {isGenerating ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <PlusCircle className="mr-2 h-4 w-4" />
+            )}
+            {isGenerating ? 'Generating...' : 'Generate New Report'}
           </Button>
         </CardHeader>
         <CardContent>

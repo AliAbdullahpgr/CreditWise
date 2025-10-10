@@ -20,7 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CreditReport } from "@/lib/types";
-import { PlusCircle, Share2, Download, Eye, Loader2 } from "lucide-react";
+import { PlusCircle, Download, Eye, Loader2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,12 +32,15 @@ import { onSnapshot, query, where, orderBy } from 'firebase/firestore';
 import { auth } from '@/lib/firebase/config';
 import { getCreditReportsCollection, getTransactionsCollection } from '@/lib/firebase/collections';
 import { useToast } from '@/hooks/use-toast';
+import { ReportViewDialog } from '@/components/report-view-dialog';
 
 export default function ReportsPage() {
   const [creditReports, setCreditReports] = useState<CreditReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [selectedReport, setSelectedReport] = useState<CreditReport | null>(null);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -73,13 +76,104 @@ export default function ReportsPage() {
   }, [userId]);
   
   const handleGenerateReport = async () => {
+    if (!userId) {
+      toast({
+        title: 'Authentication Required',
+        description: 'Please sign in to generate a credit report.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     setIsGenerating(true);
-    toast({
-      title: 'Feature Not Available',
-      description: 'PDF report generation is temporarily disabled.',
-      variant: 'destructive'
-    });
-    setTimeout(() => setIsGenerating(false), 1000);
+    console.log('\n🚀 [REPORT] Starting credit report generation...');
+    
+    try {
+      // Step 1: Fetch user transactions
+      console.log('📥 [STEP 1] Fetching user transactions...');
+      const response = await fetch('/api/generate-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to generate report');
+      }
+
+      const result = await response.json();
+      console.log('✅ [REPORT] Credit report generated successfully:', result);
+
+      toast({
+        title: 'Report Generated! 🎉',
+        description: `Your credit score is ${result.score} (Grade ${result.grade})`,
+      });
+    } catch (error: any) {
+      console.error('❌ [REPORT] Error generating report:', error);
+      toast({
+        title: 'Report Generation Failed',
+        description: error.message || 'Failed to generate credit report. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleViewReport = (report: CreditReport) => {
+    console.log('👁️ [VIEW] Opening report:', report.id);
+    setSelectedReport(report);
+    setViewDialogOpen(true);
+  };
+
+  const handleDownloadPDF = async (report: CreditReport) => {
+    console.log('📥 [DOWNLOAD] Generating PDF for report:', report.id);
+    
+    try {
+      toast({
+        title: 'Generating PDF...',
+        description: 'Please wait while we prepare your report.',
+      });
+
+      // Call PDF generation API
+      const response = await fetch('/api/generate-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reportId: report.id, userId }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF');
+      }
+
+      // Get the PDF blob
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `credit-report-${report.id.substring(0, 8)}-${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: 'PDF Downloaded! 📄',
+        description: 'Your credit report has been downloaded.',
+      });
+    } catch (error: any) {
+      console.error('❌ [DOWNLOAD] Error generating PDF:', error);
+      toast({
+        title: 'Download Failed',
+        description: error.message || 'Failed to download PDF. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
 
@@ -157,15 +251,11 @@ export default function ReportsPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem disabled>
+                          <DropdownMenuItem onClick={() => handleViewReport(report)}>
                             <Eye className="mr-2 h-4 w-4" />
                             View
                           </DropdownMenuItem>
-                          <DropdownMenuItem disabled>
-                            <Share2 className="mr-2 h-4 w-4" />
-                            Share
-                          </DropdownMenuItem>
-                          <DropdownMenuItem disabled>
+                          <DropdownMenuItem onClick={() => handleDownloadPDF(report)}>
                             <Download className="mr-2 h-4 w-4" />
                             Download PDF
                           </DropdownMenuItem>
@@ -188,6 +278,13 @@ export default function ReportsPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Report View Dialog */}
+      <ReportViewDialog 
+        report={selectedReport}
+        open={viewDialogOpen}
+        onOpenChange={setViewDialogOpen}
+      />
     </div>
   );
 }

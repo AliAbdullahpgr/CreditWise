@@ -8,6 +8,37 @@ import type { FirestoreTransaction, FirestoreDocument, FirestoreCreditReport } f
 // ==================== TRANSACTIONS ====================
 
 /**
+ * Get all transactions for a user
+ */
+export async function getUserTransactions(userId: string): Promise<Transaction[]> {
+  console.log('\n📥 [FIRESTORE] getUserTransactions called');
+  console.log('👤 [USER ID]', userId);
+  
+  const snapshot = await adminDb
+    .collection('transactions')
+    .where('userId', '==', userId)
+    .orderBy('date', 'desc')
+    .get();
+
+  const transactions = snapshot.docs.map(doc => {
+    const data = doc.data() as FirestoreTransaction;
+    // Convert Firestore document to Transaction type
+    return {
+      id: data.id,
+      date: data.date,
+      merchant: data.merchant,
+      amount: data.amount,
+      type: data.type,
+      category: data.category,
+      status: data.status,
+    } as Transaction;
+  });
+
+  console.log('✅ [FETCHED]', transactions.length, 'transaction(s) found');
+  return transactions;
+}
+
+/**
  * Save multiple transactions to Firestore (called from AI flow)
  */
 export async function saveTransactions(

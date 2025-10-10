@@ -73,80 +73,13 @@ export default function ReportsPage() {
   }, [userId]);
   
   const handleGenerateReport = async () => {
-    if (!userId) {
-      toast({
-        variant: 'destructive',
-        title: 'User not found',
-        description: 'You must be logged in to generate a report.',
-      });
-      return;
-    }
-
     setIsGenerating(true);
     toast({
-      title: 'Generating Report...',
-      description: 'This may take a minute. Please wait.',
+      title: 'Feature Not Available',
+      description: 'PDF report generation is temporarily disabled.',
+      variant: 'destructive'
     });
-
-    try {
-      // Fetch all transactions for the user to generate the report
-      const transactionsCollection = getTransactionsCollection();
-      const transQuery = query(transactionsCollection, where('userId', '==', userId));
-      
-      let transactions: any[] = [];
-      const querySnapshot = await new Promise<any>((resolve, reject) => {
-        onSnapshot(transQuery, resolve, reject);
-      });
-      
-      querySnapshot.forEach((doc: any) => {
-        transactions.push(doc.data());
-      });
-
-      if (transactions.length === 0) {
-        toast({
-          variant: 'destructive',
-          title: 'Not Enough Data',
-          description: 'You need at least one transaction to generate a report.',
-        });
-        setIsGenerating(false);
-        return;
-      }
-
-      const response = await fetch('/api/generate-report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transactions, userId }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate report');
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `credit-report-${new Date().toISOString().split('T')[0]}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-
-      toast({
-        title: 'Report Generated!',
-        description: 'Your credit report has been downloaded.',
-      });
-
-    } catch (error) {
-      console.error('Error generating report:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Report Generation Failed',
-        description: error instanceof Error ? error.message : 'An unknown error occurred.',
-      });
-    } finally {
-      setIsGenerating(false);
-    }
+    setTimeout(() => setIsGenerating(false), 1000);
   };
 
 

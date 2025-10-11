@@ -1,0 +1,326 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the informal credit scoring system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string",
+          "description": "User's phone number."
+        },
+        "fullName": {
+          "type": "string",
+          "description": "User's full name."
+        },
+        "nationalId": {
+          "type": "string",
+          "description": "User's national identification number."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user account was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "fullName",
+        "createdAt"
+      ]
+    },
+    "Document": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Document",
+      "type": "object",
+      "description": "Represents a financial document uploaded by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the document entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Document)"
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of document (receipt, utility bill, wallet statement)."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the uploaded document image.",
+          "format": "uri"
+        },
+        "uploadDate": {
+          "type": "string",
+          "description": "Timestamp indicating when the document was uploaded.",
+          "format": "date-time"
+        },
+        "ocrStatus": {
+          "type": "string",
+          "description": "Status of the OCR process for the document."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "type",
+        "imageUrl",
+        "uploadDate",
+        "ocrStatus"
+      ]
+    },
+    "Transaction": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Transaction",
+      "type": "object",
+      "description": "Represents a financial transaction extracted from a document.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the transaction entity."
+        },
+        "documentId": {
+          "type": "string",
+          "description": "Reference to Document. (Relationship: Document 1:N Transaction)"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Transaction)"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Transaction amount."
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of transaction (income or expense)."
+        },
+        "category": {
+          "type": "string",
+          "description": "Category of the transaction."
+        },
+        "date": {
+          "type": "string",
+          "description": "Date of the transaction.",
+          "format": "date-time"
+        },
+        "merchant": {
+          "type": "string",
+          "description": "Name of the merchant or vendor involved in the transaction."
+        }
+      },
+      "required": [
+        "id",
+        "documentId",
+        "userId",
+        "amount",
+        "type",
+        "category",
+        "date",
+        "merchant"
+      ]
+    },
+    "CreditScore": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "CreditScore",
+      "type": "object",
+      "description": "Represents a user's credit score.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the credit score entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N CreditScore)"
+        },
+        "score": {
+          "type": "number",
+          "description": "Credit score value (0-1000)."
+        },
+        "riskGrade": {
+          "type": "string",
+          "description": "Risk grade assigned to the credit score (A/B/C/D)."
+        },
+        "calculationDate": {
+          "type": "string",
+          "description": "Timestamp indicating when the credit score was calculated.",
+          "format": "date-time"
+        },
+        "reportUrl": {
+          "type": "string",
+          "description": "URL of the generated credit report.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "score",
+        "riskGrade",
+        "calculationDate",
+        "reportUrl"
+      ]
+    },
+    "FinancialMetrics": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FinancialMetrics",
+      "type": "object",
+      "description": "Represents a user's financial metrics.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the financial metrics entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N FinancialMetrics)"
+        },
+        "avgMonthlyIncome": {
+          "type": "number",
+          "description": "Average monthly income."
+        },
+        "expenseRatio": {
+          "type": "number",
+          "description": "Expense-to-income ratio."
+        },
+        "paymentConsistency": {
+          "type": "number",
+          "description": "Percentage representing payment consistency."
+        },
+        "growthTrend": {
+          "type": "number",
+          "description": "Financial growth trend."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "avgMonthlyIncome",
+        "expenseRatio",
+        "paymentConsistency",
+        "growthTrend"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. Path-based ownership ensures only the authenticated user can access their own profile.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/documents/{documentId}",
+        "definition": {
+          "entityName": "Document",
+          "schema": {
+            "$ref": "#/backend/entities/Document"
+          },
+          "description": "Stores financial documents uploaded by users. Path-based ownership ensures only the authenticated user can access their documents.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "documentId",
+              "description": "The unique identifier of the document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/transactions/{transactionId}",
+        "definition": {
+          "entityName": "Transaction",
+          "schema": {
+            "$ref": "#/backend/entities/Transaction"
+          },
+          "description": "Stores financial transactions extracted from user documents. Path-based ownership ensures only the authenticated user can access their transactions.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "transactionId",
+              "description": "The unique identifier of the transaction."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/creditScores/{creditScoreId}",
+        "definition": {
+          "entityName": "CreditScore",
+          "schema": {
+            "$ref": "#/backend/entities/CreditScore"
+          },
+          "description": "Stores credit scores calculated for users. Path-based ownership ensures only the authenticated user can access their credit scores.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "creditScoreId",
+              "description": "The unique identifier of the credit score."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/financialMetrics/{financialMetricsId}",
+        "definition": {
+          "entityName": "FinancialMetrics",
+          "schema": {
+            "$ref": "#/backend/entities/FinancialMetrics"
+          },
+          "description": "Stores financial metrics calculated for users. Path-based ownership ensures only the authenticated user can access their financial metrics.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "financialMetricsId",
+              "description": "The unique identifier of the financial metrics."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to provide a secure and scalable solution for the informal credit scoring system. It emphasizes authorization independence, clarity, and predictable data structures. The design employs structural segregation by utilizing dedicated collections for different data types, ensuring that all documents within a collection share the same security requirements. This simplifies security rules and enhances maintainability. Authorization independence is achieved via path-based ownership for user-specific data, such as documents, transactions, financial metrics, and credit scores. This eliminates the need for complex `get()` calls in security rules, ensuring that authorization is based solely on `request.auth.uid` and the document path. The design supports the required QAPs by segregating data based on ownership, ensuring that list operations can be securely performed with simple rules. For example, listing documents is secured by the path `/users/{userId}/documents/{documentId}` where the rule only allows access if `request.auth.uid == userId`."
+  }
+}

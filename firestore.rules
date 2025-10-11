@@ -1,31 +1,165 @@
+/**
+ * @file Firestore Security Rules for the informal credit scoring system.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model for all data. Each user has complete control over their own data tree,
+ * while access to other users' data is denied. All collections are private and user-specific.
+ *
+ * Data Structure:
+ * The database is structured around user-specific subcollections.  All data (documents, transactions, credit scores, financial metrics)
+ * is nested under `/users/{userId}`.
+ *
+ * Key Security Decisions:
+ * - No public data:  All `list` operations are restricted to the owner of the data.
+ * - Path-based ownership:  Authorization is based solely on the `request.auth.uid` and the document path, eliminating the need for `get()` calls.
+ */
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper function to check if a user is signed in
-    function isSignedIn() {
-      return request.auth != null;
-    }
-    
-    // Helper function to check if the user is the owner of a document
-    function isOwner(userId) {
-      return request.auth.uid == userId;
+
+    /**
+     * @description Rule for managing user profiles.
+     * @path /users/{userId}
+     * @allow (create) User with matching ID can create their profile.
+     * @allow (get, update, delete) Authenticated user can access and modify their own profile.
+     * @deny (create) User cannot create a profile with an ID that doesn't match their own.
+     * @deny (get, update, delete) User cannot access or modify another user's profile.
+     * @principle Enforces document ownership for writes.
+     */
+    match /users/{userId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
-    // Transactions can only be read/written by the user who owns them
-    match /transactions/{transactionId} {
-      allow read, write: if isSignedIn() && isOwner(resource.data.userId);
+    /**
+     * @description Rule for managing user documents.
+     * @path /users/{userId}/documents/{documentId}
+     * @allow (create) Authenticated user can create documents in their own folder.
+     * @allow (get, update, delete) Authenticated user can access and modify their own documents.
+     * @deny (create) User cannot create documents in another user's folder.
+     * @deny (get, update, delete) User cannot access or modify another user's documents.
+     * @principle Enforces document ownership for writes.
+     */
+    match /users/{userId}/documents/{documentId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
-    // Documents can only be read/written by the user who owns them
-    match /documents/{documentId} {
-      allow read, write: if isSignedIn() && isOwner(resource.data.userId);
+    /**
+     * @description Rule for managing user transactions.
+     * @path /users/{userId}/transactions/{transactionId}
+     * @allow (create) Authenticated user can create transactions in their own folder.
+     * @allow (get, update, delete) Authenticated user can access and modify their own transactions.
+     * @deny (create) User cannot create transactions in another user's folder.
+     * @deny (get, update, delete) User cannot access or modify another user's transactions.
+     * @principle Enforces document ownership for writes.
+     */
+    match /users/{userId}/transactions/{transactionId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
-    // Credit reports can only be read/written by the user who owns them
-    match /creditReports/{reportId} {
-      allow read, write: if isSignedIn() && isOwner(resource.data.userId);
+    /**
+     * @description Rule for managing user credit scores.
+     * @path /users/{userId}/creditScores/{creditScoreId}
+     * @allow (create) Authenticated user can create creditScores in their own folder.
+     * @allow (get, update, delete) Authenticated user can access and modify their own creditScores.
+     * @deny (create) User cannot create creditScores in another user's folder.
+     * @deny (get, update, delete) User cannot access or modify another user's creditScores.
+     * @principle Enforces document ownership for writes.
+     */
+    match /users/{userId}/creditScores/{creditScoreId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
+    }
+
+    /**
+     * @description Rule for managing user financial metrics.
+     * @path /users/{userId}/financialMetrics/{financialMetricsId}
+     * @allow (create) Authenticated user can create financialMetrics in their own folder.
+     * @allow (get, update, delete) Authenticated user can access and modify their own financialMetrics.
+     * @deny (create) User cannot create financialMetrics in another user's folder.
+     * @deny (get, update, delete) User cannot access or modify another user's financialMetrics.
+     * @principle Enforces document ownership for writes.
+     */
+    match /users/{userId}/financialMetrics/{financialMetricsId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
   }
 }

@@ -5,5 +5,5 @@ export const firebaseConfig = {
   "authDomain": "hisaabscore.firebaseapp.com",
   "measurementId": "",
   "messagingSenderId": "818345881555",
-  "storageBucket": "hisaabscore.firebasestorage.app"
+  "storageBucket": "hisaabscore.appspot.com"
 };

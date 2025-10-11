@@ -218,8 +218,8 @@
   },
   "auth": {
     "providers": [
-      "password",
-      "anonymous"
+      "google.com",
+      "password"
     ]
   },
   "firestore": {
@@ -324,3 +324,5 @@
     "reasoning": "The Firestore data structure is designed to provide a secure and scalable solution for the informal credit scoring system. It emphasizes authorization independence, clarity, and predictable data structures. The design employs structural segregation by utilizing dedicated collections for different data types, ensuring that all documents within a collection share the same security requirements. This simplifies security rules and enhances maintainability. Authorization independence is achieved via path-based ownership for user-specific data, such as documents, transactions, financial metrics, and credit scores. This eliminates the need for complex `get()` calls in security rules, ensuring that authorization is based solely on `request.auth.uid` and the document path. The design supports the required QAPs by segregating data based on ownership, ensuring that list operations can be securely performed with simple rules. For example, listing documents is secured by the path `/users/{userId}/documents/{documentId}` where the rule only allows access if `request.auth.uid == userId`."
   }
 }
+
+    

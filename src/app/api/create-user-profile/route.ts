@@ -17,8 +17,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('📝 [API] Creating/updating user profile for:', userId);
-
     await createOrUpdateUserProfile(userId, {
       email,
       displayName: displayName || null,
@@ -30,7 +28,6 @@ export async function POST(request: NextRequest) {
       message: 'User profile created/updated successfully',
     });
   } catch (error) {
-    console.error('❌ [API] Error creating/updating user profile:', error);
     return NextResponse.json(
       {
         error: 'Failed to create/update user profile',

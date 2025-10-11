@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
-import { Settings, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { useUser, useAuth } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { signOut } from 'firebase/auth';
@@ -41,7 +41,6 @@ export function UserNav() {
       });
       router.push('/login');
     } catch (error) {
-      console.error('Error signing out:', error);
        toast({
         variant: 'destructive',
         title: 'Logout Failed',
@@ -87,15 +86,6 @@ export function UserNav() {
             </p>
           </div>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuItem asChild>
-            <Link href="/settings">
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
-            </Link>
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />

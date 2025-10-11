@@ -53,24 +53,11 @@ export default function DocumentsPage() {
   const sortedDocuments = useMemo(() => {
     if (!documents) return null;
     return [...documents].sort((a, b) => {
-      const dateA = new Date(a.uploadDate || a.createdAt).getTime();
-      const dateB = new Date(b.uploadDate || b.createdAt).getTime();
+      const dateA = new Date(a.uploadDate || (a as any).createdAt).getTime();
+      const dateB = new Date(b.uploadDate || (b as any).createdAt).getTime();
       return dateB - dateA; // Descending order (newest first)
     });
   }, [documents]);
-  
-  // Debug logging
-  useEffect(() => {
-    console.log('📊 [DOCUMENTS DEBUG]', {
-      user: user?.uid,
-      documentsCount: documents?.length ?? 0,
-      sortedCount: sortedDocuments?.length ?? 0,
-      isLoading: documentsLoading,
-      hasError: !!documentsError,
-      error: documentsError,
-      firstDoc: documents?.[0]
-    });
-  }, [documents, sortedDocuments, documentsLoading, documentsError, user]);
 
   const [filesToUpload, setFilesToUpload] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -140,9 +127,6 @@ export default function DocumentsPage() {
       let docId = '';
 
       try {
-        console.log(
-          `\n📄 [FILE ${i + 1}/${filesToUpload.length}] Processing: ${file.name}`
-        );
         const newDoc: Omit<Document, 'id'> = {
           name: file.name,
           uploadDate: new Date().toISOString().split('T')[0], // Format: YYYY-MM-DD
@@ -153,9 +137,7 @@ export default function DocumentsPage() {
         const storagePath = `documents/${user.uid}/${Date.now()}_${file.name}`;
         const downloadUrl = `placeholder://no-storage/${storagePath}`;
 
-        console.log('💾 [FIRESTORE] Creating document record...');
         docId = await createDocument(user.uid, newDoc, downloadUrl);
-        console.log('✅ [FIRESTORE] Document created with ID:', docId);
 
         try {
           const dataUri = await fileToDataUri(file);
@@ -165,7 +147,6 @@ export default function DocumentsPage() {
             docId
           );
         } catch (aiError) {
-          console.error('AI processing failed for', file.name, aiError);
           const errorMessage =
             aiError instanceof Error
               ? aiError.message
@@ -178,7 +159,6 @@ export default function DocumentsPage() {
           });
         }
       } catch (uploadError) {
-        console.error('Upload failed for', file.name, uploadError);
         if (docId) {
           const errorMessage =
             uploadError instanceof Error

@@ -52,53 +52,7 @@ export default function TransactionsPage() {
   , [firestore, user]);
   const { data: transactions, isLoading: transactionsLoading, error: transactionsError } = useCollection<Transaction>(transactionsQuery);
   
-  // Try a direct query as a fallback test
-  const [directQueryResults, setDirectQueryResults] = useState<Transaction[] | null>(null);
-  useEffect(() => {
-    if (!user || !firestore || transactionsLoading) return;
-    
-    const runDirectQuery = async () => {
-      try {
-        console.log('🧪 [DIRECT QUERY TEST] Starting...');
-        const collRef = collection(firestore, 'users', user.uid, 'transactions');
-        const snapshot = await getDocs(collRef);
-        console.log('🧪 [DIRECT QUERY TEST] Snapshot size:', snapshot.size);
-        const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
-        console.log('🧪 [DIRECT QUERY TEST] Documents:', docs.length);
-        setDirectQueryResults(docs);
-      } catch (err) {
-        console.error('🧪 [DIRECT QUERY TEST] Error:', err);
-      }
-    };
-    
-    runDirectQuery();
-  }, [user, firestore, transactionsLoading]);
-  
-  // Debug logging for transactions
-  useEffect(() => {
-    console.log('💳 [TRANSACTIONS DEBUG]');
-    console.log('  User ID:', user?.uid);
-    console.log('  User Email:', user?.email);
-    console.log('  Transactions Count:', transactions?.length ?? 0);
-    console.log('  Is Loading:', transactionsLoading);
-    console.log('  Has Error:', !!transactionsError);
-    console.log('  Error:', transactionsError);
-    console.log('  Query exists:', !!transactionsQuery);
-    console.log('  Firestore exists:', !!firestore);
-    
-    if (transactionsQuery) {
-      console.log('  Query path:', (transactionsQuery as any).path);
-    }
-    
-    // Log to user too
-    if (transactions && transactions.length > 0) {
-      console.log(`✅ ${transactions.length} transactions loaded successfully`);
-      console.table(transactions.slice(0, 3));
-    } else if (!transactionsLoading && transactions !== null) {
-      console.warn('⚠️ Query completed but no transactions found');
-      console.warn('Expected path: users/' + user?.uid + '/transactions');
-    }
-  }, [transactions, transactionsLoading, transactionsError, user, transactionsQuery, firestore]);
+
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -145,18 +99,7 @@ export default function TransactionsPage() {
     [transactions, searchTerm, filterType, filterCategory]
   );
 
-  // Debug display for direct query results
-  useEffect(() => {
-    if (directQueryResults !== null) {
-      console.log('🧪 [COMPARISON]');
-      console.log('  useCollection results:', transactions?.length ?? 0);
-      console.log('  Direct getDocs results:', directQueryResults.length);
-      if (directQueryResults.length > 0 && (!transactions || transactions.length === 0)) {
-        console.error('❌ [MISMATCH] Direct query found data but useCollection did not!');
-        console.error('This indicates a problem with the real-time listener or query construction');
-      }
-    }
-  }, [directQueryResults, transactions]);
+
 
   if (isUserLoading || transactionsLoading) {
     return (

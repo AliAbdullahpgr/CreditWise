@@ -18,10 +18,7 @@ export interface CreditFactors {
  * Returns scores from 0-100 for each factor
  */
 export function analyzeTransactionsForCreditScore(transactions: Transaction[]): CreditFactors {
-  console.log('📊 [ANALYSIS] Starting credit factor analysis for', transactions.length, 'transactions');
-
   if (transactions.length === 0) {
-    console.log('⚠️ [ANALYSIS] No transactions found, returning default scores');
     return {
       billPaymentHistory: 50,
       incomeConsistency: 50,
@@ -38,23 +35,18 @@ export function analyzeTransactionsForCreditScore(transactions: Transaction[]): 
 
   // 1. Bill Payment History (30%) - Focus on regular payments like rent, utilities, mobile
   const billPaymentHistory = calculateBillPaymentHistory(sortedTransactions);
-  console.log('💡 [FACTOR 1] Bill Payment History:', billPaymentHistory);
 
   // 2. Income Consistency (25%) - Regularity of income
   const incomeConsistency = calculateIncomeConsistency(sortedTransactions);
-  console.log('💡 [FACTOR 2] Income Consistency:', incomeConsistency);
 
   // 3. Expense Management (20%) - Spending discipline and savings
   const expenseManagement = calculateExpenseManagement(sortedTransactions);
-  console.log('💡 [FACTOR 3] Expense Management:', expenseManagement);
 
   // 4. Financial Growth (15%) - Income trend over time
   const financialGrowth = calculateFinancialGrowth(sortedTransactions);
-  console.log('💡 [FACTOR 4] Financial Growth:', financialGrowth);
 
   // 5. Transaction Diversity (10%) - Variety of income sources
   const transactionDiversity = calculateTransactionDiversity(sortedTransactions);
-  console.log('💡 [FACTOR 5] Transaction Diversity:', transactionDiversity);
 
   const factors: CreditFactors = {
     billPaymentHistory,
@@ -64,7 +56,6 @@ export function analyzeTransactionsForCreditScore(transactions: Transaction[]): 
     transactionDiversity,
   };
 
-  console.log('✅ [ANALYSIS] Credit factors calculated:', factors);
   return factors;
 }
 

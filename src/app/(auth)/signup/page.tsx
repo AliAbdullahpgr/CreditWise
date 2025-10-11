@@ -15,10 +15,9 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useAuth } from '@/firebase';
 import {
-  GoogleAuthProvider,
-  signInWithPopup,
   createUserWithEmailAndPassword,
   updateProfile,
+  sendEmailVerification,
 } from 'firebase/auth';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
@@ -41,32 +40,6 @@ export default function SignupPage() {
     }
   }, [user, isUserLoading, router]);
 
-  const handlePostSignup = async (
-    firebaseUser: import('firebase/auth').User
-  ) => {
-    try {
-      await fetch('/api/create-user-profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-          photoURL: firebaseUser.photoURL,
-        }),
-      });
-    } catch (profileError) {
-      console.error('Error creating user profile:', profileError);
-      // Don't block signup if profile creation fails
-    }
-
-    toast({
-      title: 'Account Created!',
-      description: `Welcome, ${firebaseUser.displayName}!`,
-    });
-    router.push('/dashboard');
-  };
-
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!auth) return;
@@ -82,44 +55,60 @@ export default function SignupPage() {
       const displayName = `${firstName} ${lastName}`.trim();
       await updateProfile(user, { displayName });
 
-      // We need to reload the user to get the updated displayName
-      await user.reload();
-      const updatedUser = auth.currentUser;
-
-      if (updatedUser) {
-        await handlePostSignup(updatedUser);
+      // Send email verification with custom settings
+      try {
+        await sendEmailVerification(user, {
+          url: window.location.origin + '/login',
+          handleCodeInApp: false,
+        });
+      } catch (emailError: any) {
+        toast({
+          variant: 'destructive',
+          title: 'Warning',
+          description: 'Account created but verification email could not be sent. Please try to resend it from the login page.',
+        });
       }
+
+      // Create user profile in Firestore
+      try {
+        await fetch('/api/create-user-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.uid,
+            email: user.email,
+            displayName,
+            photoURL: user.photoURL,
+          }),
+        });
+      } catch (profileError) {
+        // Silently fail - profile creation is not critical for signup
+      }
+
+      // Sign out the user until they verify their email
+      await auth.signOut();
+
+      toast({
+        title: 'Account Created!',
+        description: 'Please check your email to verify your account before logging in.',
+      });
+      
+      // Redirect to login page
+      router.push('/login');
     } catch (error: any) {
-      console.error('Error signing up with email:', error);
       let description = 'An unexpected error occurred. Please try again.';
       if (error.code === 'auth/email-already-in-use') {
         description =
           'This email is already in use. Please try logging in instead.';
       } else if (error.code === 'auth/weak-password') {
         description = 'Password should be at least 6 characters.';
+      } else if (error.code === 'auth/invalid-email') {
+        description = 'Invalid email address.';
       }
       toast({
         variant: 'destructive',
         title: 'Sign Up Failed',
         description,
-      });
-    } finally {
-      setIsSigningUp(false);
-    }
-  };
-
-  const handleGoogleSignup = async () => {
-    if (!auth) return;
-    setIsSigningUp(true);
-    try {
-      const result = await signInWithPopup(auth, new GoogleAuthProvider());
-      await handlePostSignup(result.user);
-    } catch (error) {
-      console.error('Error signing up with Google:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Sign Up Failed',
-        description: 'Could not sign up with Google. Please try again.',
       });
     } finally {
       setIsSigningUp(false);
@@ -194,16 +183,6 @@ export default function SignupPage() {
           <Button type="submit" className="w-full" disabled={isSigningUp}>
             {isSigningUp && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Create an account
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={handleGoogleSignup}
-            disabled={isSigningUp}
-            type="button"
-          >
-            {isSigningUp && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Sign up with Google
           </Button>
         </form>
         <div className="mt-4 text-center text-sm">

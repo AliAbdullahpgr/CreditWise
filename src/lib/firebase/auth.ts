@@ -20,7 +20,6 @@ export const signInWithGoogle = async () => {
     const result = await signInWithPopup(auth, googleProvider);
     return result.user;
   } catch (error) {
-    console.error('Error signing in with Google:', error);
     return null;
   }
 };
@@ -29,7 +28,7 @@ export const logOut = async () => {
   try {
     await signOut(auth);
   } catch (error) {
-    console.error('Error signing out:', error);
+    // Silent fail
   }
 };
 

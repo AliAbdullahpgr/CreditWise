@@ -65,10 +65,8 @@ export default function ReportsPage() {
     }
 
     setIsGenerating(true);
-    console.log('\n🚀 [REPORT] Starting credit report generation...');
 
     try {
-      console.log('📥 [STEP 1] Fetching user transactions...');
       const response = await fetch('/api/generate-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -81,14 +79,12 @@ export default function ReportsPage() {
       }
 
       const result = await response.json();
-      console.log('✅ [REPORT] Credit report generated successfully:', result);
 
       toast({
         title: 'Report Generated! 🎉',
         description: `Your credit score is ${result.score} (Grade ${result.grade})`,
       });
     } catch (error: any) {
-      console.error('❌ [REPORT] Error generating report:', error);
       toast({
         title: 'Report Generation Failed',
         description:
@@ -101,14 +97,12 @@ export default function ReportsPage() {
   };
 
   const handleViewReport = (report: CreditReport) => {
-    console.log('👁️ [VIEW] Opening report:', report.id);
     setSelectedReport(report);
     setViewDialogOpen(true);
   };
 
   const handleDownloadPDF = async (report: CreditReport) => {
     if (!user) return;
-    console.log('📥 [DOWNLOAD] Generating PDF for report:', report.id);
 
     try {
       toast({
@@ -143,7 +137,6 @@ export default function ReportsPage() {
         description: 'Your credit report has been downloaded.',
       });
     } catch (error: any) {
-      console.error('❌ [DOWNLOAD] Error generating PDF:', error);
       toast({
         title: 'Download Failed',
         description: error.message || 'Failed to download PDF. Please try again.',

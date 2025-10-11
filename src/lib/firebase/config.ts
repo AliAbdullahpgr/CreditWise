@@ -26,7 +26,7 @@ if (typeof window !== 'undefined' && !getApps().length) {
     auth = getAuth(app);
     storage = getStorage(app);
   } catch (e) {
-    console.error("Firebase initialization error", e);
+    throw new Error("Failed to initialize Firebase");
   }
 } else if (typeof window !== 'undefined') {
   app = getApps()[0];

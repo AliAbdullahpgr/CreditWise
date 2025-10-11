@@ -18,10 +18,6 @@ export async function createOrUpdateUserProfile(
     photoURL?: string;
   }
 ): Promise<void> {
-  console.log('\n👤 [FIRESTORE] createOrUpdateUserProfile called');
-  console.log('🆔 [USER ID]', userId);
-  console.log('📧 [EMAIL]', userData.email);
-  
   const userRef = adminDb.collection('users').doc(userId);
   const userDoc = await userRef.get();
   
@@ -29,7 +25,6 @@ export async function createOrUpdateUserProfile(
   
   if (!userDoc.exists) {
     // Create new user profile
-    console.log('🆕 [CREATE] Creating new user profile...');
     await userRef.set({
       email: userData.email,
       displayName: userData.displayName || null,
@@ -38,17 +33,14 @@ export async function createOrUpdateUserProfile(
       updatedAt: now,
       lastLoginAt: now,
     });
-    console.log('✅ [CREATED] User profile created successfully');
   } else {
     // Update existing user profile
-    console.log('🔄 [UPDATE] Updating existing user profile...');
     await userRef.update({
       displayName: userData.displayName || null,
       photoURL: userData.photoURL || null,
       updatedAt: now,
       lastLoginAt: now,
     });
-    console.log('✅ [UPDATED] User profile updated successfully');
   }
 }
 
@@ -56,17 +48,12 @@ export async function createOrUpdateUserProfile(
  * Get user profile
  */
 export async function getUserProfile(userId: string): Promise<any | null> {
-  console.log('\n👤 [FIRESTORE] getUserProfile called');
-  console.log('🆔 [USER ID]', userId);
-  
   const userDoc = await adminDb.collection('users').doc(userId).get();
   
   if (!userDoc.exists) {
-    console.log('❌ [NOT FOUND] User profile does not exist');
     return null;
   }
   
-  console.log('✅ [FOUND] User profile retrieved');
   return { id: userDoc.id, ...userDoc.data() };
 }
 
@@ -76,9 +63,6 @@ export async function getUserProfile(userId: string): Promise<any | null> {
  * Get all transactions for a user
  */
 export async function getUserTransactions(userId: string): Promise<Transaction[]> {
-  console.log('\n📥 [FIRESTORE] getUserTransactions called');
-  console.log('👤 [USER ID]', userId);
-  
   // Fetch without orderBy to avoid index requirement
   const snapshot = await adminDb
     .collection('users')
@@ -107,7 +91,6 @@ export async function getUserTransactions(userId: string): Promise<Transaction[]
     return dateB - dateA;
   });
 
-  console.log('✅ [FETCHED]', transactions.length, 'transaction(s) found');
   return transactions;
 }
 
@@ -119,17 +102,11 @@ export async function saveTransactions(
   transactions: Transaction[],
   sourceDocumentId?: string
 ): Promise<void> {
-  console.log('\n💾 [FIRESTORE] saveTransactions called');
-  console.log('👤 [USER ID]', userId);
-  console.log('📊 [COUNT]', transactions.length, 'transaction(s)');
-  console.log('📝 [SOURCE DOC]', sourceDocumentId || 'none');
-  
   const batch = adminDb.batch();
   const now = new Date();
 
-  transactions.forEach((transaction, index) => {
+  transactions.forEach((transaction) => {
     const docRef = adminDb.collection('users').doc(userId).collection('transactions').doc(transaction.id);
-    console.log(`  ${index + 1}. Adding to batch: ${transaction.merchant} - $${transaction.amount}`);
     const firestoreData: Omit<FirestoreTransaction, 'id'> & { id?: string } = {
       ...transaction,
       userId,
@@ -142,9 +119,7 @@ export async function saveTransactions(
     batch.set(docRef, firestoreData);
   });
 
-  console.log('🚀 [BATCH WRITE] Committing batch write to Firestore...');
   await batch.commit();
-  console.log('✅ [BATCH WRITE] All transactions saved successfully');
 }
 
 // ==================== DOCUMENTS ====================
@@ -157,11 +132,6 @@ export async function createDocument(
   document: Omit<Document, 'id'>,
   storageUrl: string
 ): Promise<string> {
-  console.log('\n💾 [FIRESTORE] createDocument called');
-  console.log('👤 [USER ID]', userId);
-  console.log('📄 [DOC NAME]', document.name);
-  console.log('📌 [DOC TYPE]', document.type);
-  
   const docRef = adminDb.collection('users').doc(userId).collection('documents').doc();
   const now = new Date();
   const uploadDateString = now.toISOString().split('T')[0]; // Format: YYYY-MM-DD
@@ -183,10 +153,7 @@ export async function createDocument(
     createdAt: now,
   };
 
-  console.log('🎯 [FIRESTORE ID]', docRef.id);
-  console.log('🚀 [WRITING] Saving document to Firestore...');
   await docRef.set(firestoreData);
-  console.log('✅ [CREATED] Document record created in Firestore');
   return docRef.id;
 }
 
@@ -201,13 +168,6 @@ export async function updateDocumentStatus(
   extractedTransactionCount?: number,
   errorMessage?: string
 ): Promise<void> {
-  console.log('\n📋 [FIRESTORE] updateDocumentStatus called');
-  console.log('👤 [USER ID]', userId);
-  console.log('🎯 [DOC ID]', documentId);
-  console.log('📈 [STATUS]', status);
-  console.log('📊 [TX COUNT]', extractedTransactionCount ?? 'not provided');
-  if (errorMessage) console.log('❌ [ERROR]', errorMessage);
-  
   const updates: Record<string, any> = {
     status,
     processedAt: new Date(),
@@ -221,14 +181,12 @@ export async function updateDocumentStatus(
     updates.errorMessage = errorMessage;
   }
 
-  console.log('🚀 [UPDATING] Updating document in Firestore...');
   await adminDb
     .collection('users')
     .doc(userId)
     .collection('documents')
     .doc(documentId)
     .update(updates);
-  console.log('✅ [UPDATED] Document status updated to:', status);
 }
 
 // ==================== CREDIT REPORTS ====================

@@ -98,6 +98,7 @@ export async function extractTransactionsFromDocument(
       // Update document status
       console.log('📋 [STATUS UPDATE] Marking document as processed...');
       await updateDocumentStatus(
+        userId,
         documentId,
         'processed',
         transactionsWithIds.length
@@ -107,6 +108,7 @@ export async function extractTransactionsFromDocument(
        // Still mark as processed even if no transactions found
        console.log('⚠️ [NO TRANSACTIONS] No transactions extracted, marking as processed anyway');
        await updateDocumentStatus(
+        userId,
         documentId,
         'processed',
         0
@@ -121,10 +123,11 @@ export async function extractTransactionsFromDocument(
     console.error('🔍 [ERROR DETAILS]', error);
     
     // Update document with error status
-    if (documentId) {
+    if (documentId && userId) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown AI processing error';
       console.log('⚠️ [ERROR RECOVERY] Updating document status to failed...');
       await updateDocumentStatus(
+        userId,
         documentId,
         'failed',
         0,

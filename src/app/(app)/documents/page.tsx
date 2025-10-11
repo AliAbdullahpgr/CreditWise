@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Card,
@@ -43,10 +43,34 @@ export default function DocumentsPage() {
   const router = useRouter();
   const firestore = useFirestore();
 
+  // Try query WITHOUT orderBy first to see if documents exist
   const documentsQuery = useMemoFirebase(() =>
-    user ? query(collection(firestore, 'documents'), where('userId', '==', user.uid), orderBy('uploadDate', 'desc')) : null
+    user ? collection(firestore, 'users', user.uid, 'documents') : null
   , [firestore, user]);
-  const { data: documents, isLoading: documentsLoading } = useCollection<Document>(documentsQuery);
+  const { data: documents, isLoading: documentsLoading, error: documentsError } = useCollection<Document>(documentsQuery);
+  
+  // Sort documents in memory after fetching (instead of using orderBy in Firestore)
+  const sortedDocuments = useMemo(() => {
+    if (!documents) return null;
+    return [...documents].sort((a, b) => {
+      const dateA = new Date(a.uploadDate || a.createdAt).getTime();
+      const dateB = new Date(b.uploadDate || b.createdAt).getTime();
+      return dateB - dateA; // Descending order (newest first)
+    });
+  }, [documents]);
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('📊 [DOCUMENTS DEBUG]', {
+      user: user?.uid,
+      documentsCount: documents?.length ?? 0,
+      sortedCount: sortedDocuments?.length ?? 0,
+      isLoading: documentsLoading,
+      hasError: !!documentsError,
+      error: documentsError,
+      firstDoc: documents?.[0]
+    });
+  }, [documents, sortedDocuments, documentsLoading, documentsError, user]);
 
   const [filesToUpload, setFilesToUpload] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -121,7 +145,7 @@ export default function DocumentsPage() {
         );
         const newDoc: Omit<Document, 'id'> = {
           name: file.name,
-          uploadDate: new Date().toISOString(),
+          uploadDate: new Date().toISOString().split('T')[0], // Format: YYYY-MM-DD
           type: file.type.startsWith('image/') ? 'receipt' : 'utility bill',
           status: 'pending',
         };
@@ -146,7 +170,7 @@ export default function DocumentsPage() {
             aiError instanceof Error
               ? aiError.message
               : 'Unknown AI processing error';
-          await updateDocumentStatus(docId, 'failed', 0, errorMessage);
+          await updateDocumentStatus(user.uid, docId, 'failed', 0, errorMessage);
           toast({
             variant: 'destructive',
             title: 'AI Processing Failed',
@@ -161,6 +185,7 @@ export default function DocumentsPage() {
               ? uploadError.message
               : 'Unknown upload error';
           await updateDocumentStatus(
+            user.uid,
             docId,
             'failed',
             0,
@@ -351,8 +376,8 @@ export default function DocumentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {documents && documents.length > 0 ? (
-                documents.map((doc) => (
+              {sortedDocuments && sortedDocuments.length > 0 ? (
+                sortedDocuments.map((doc) => (
                   <TableRow key={doc.id}>
                     <TableCell className="font-medium">{doc.name}</TableCell>
                     <TableCell className="hidden sm:table-cell capitalize">
@@ -375,7 +400,7 @@ export default function DocumentsPage() {
                     colSpan={4}
                     className="h-24 text-center text-muted-foreground"
                   >
-                    No documents uploaded yet.
+                    {documentsLoading ? 'Loading documents...' : 'No documents uploaded yet.'}
                   </TableCell>
                 </TableRow>
               )}

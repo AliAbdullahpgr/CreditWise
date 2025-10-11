@@ -1,5 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase/admin';
+import { getUserTransactions } from '@/lib/firebase/firestore';
+
+export async function POST(request: NextRequest) {
+  try {
+    const { userId } = await request.json();
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'User ID is required' },
+        { status: 400 }
+      );
+    }
+
+    console.log('\n🧪 [TEST API] Fetching transactions for user:', userId);
+
+    const transactions = await getUserTransactions(userId);
+
+    console.log('✅ [TEST API] Success! Found', transactions.length, 'transactions');
+
+    return NextResponse.json({
+      success: true,
+      count: transactions.length,
+      transactions: transactions
+    });
+
+  } catch (error: any) {
+    console.error('❌ [TEST API] Error:', error);
+    
+    return NextResponse.json(
+      { 
+        error: error.message,
+        code: error.code,
+        details: error.details || 'No additional details'
+      },
+      { status: 500 }
+    );
+  }
+}
 
 export async function GET(request: NextRequest) {
   console.log('🧪 [API TEST] Firestore connection test started');

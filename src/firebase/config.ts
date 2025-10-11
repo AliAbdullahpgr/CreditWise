@@ -1,8 +1,9 @@
 export const firebaseConfig = {
-  "projectId": "hisaabscore-12712437-b58e8",
-  "appId": "1:875882767287:web:dee64862d59c969f583e32",
-  "apiKey": "AIzaSyAuffttEqZI1ysHVSMv4s1F4LWCNmrsIw0",
-  "authDomain": "hisaabscore-12712437-b58e8.firebaseapp.com",
+  "projectId": "hisaabscore",
+  "appId": "1:818345881555:web:1b789186f60222ea7c0926",
+  "apiKey": "AIzaSyCv5g4d29uFslxt3ddsNZbuHKIDQM4x88o",
+  "authDomain": "hisaabscore.firebaseapp.com",
   "measurementId": "",
-  "messagingSenderId": "875882767287"
+  "messagingSenderId": "818345881555",
+  "storageBucket": "hisaabscore.firebasestorage.app"
 };

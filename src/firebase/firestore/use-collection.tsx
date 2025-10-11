@@ -76,20 +76,46 @@ export function useCollection<T = any>(
     const unsubscribe = onSnapshot(
       memoizedTargetRefOrQuery,
       (snapshot: QuerySnapshot<DocumentData>) => {
+        const path = memoizedTargetRefOrQuery.type === 'collection'
+          ? (memoizedTargetRefOrQuery as CollectionReference).path
+          : 'query';
+          
+        console.log('🔥 [FIRESTORE LISTENER] Snapshot received');
+        console.log('  Path:', path);
+        console.log('  Size:', snapshot.size);
+        console.log('  Empty:', snapshot.empty);
+        console.log('  Docs count:', snapshot.docs.length);
+        
         const results: ResultItemType[] = [];
         for (const doc of snapshot.docs) {
-          results.push({ ...(doc.data() as T), id: doc.id });
+          const data = { ...(doc.data() as T), id: doc.id };
+          console.log('📄 [DOC]', doc.id, data);
+          results.push(data);
         }
+        
+        console.log('✅ [RESULTS]', results.length, 'documents processed');
+        
+        if (results.length === 0) {
+          console.warn('⚠️ Firestore returned 0 documents for path:', path);
+          console.warn('Check Firebase Console to verify data exists at this path');
+        }
+        
         setData(results);
         setError(null);
         setIsLoading(false);
       },
       (error: FirestoreError) => {
+        console.error('❌ [FIRESTORE ERROR]', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        
         // This logic extracts the path from either a ref or a query
         const path: string =
           memoizedTargetRefOrQuery.type === 'collection'
             ? (memoizedTargetRefOrQuery as CollectionReference).path
             : (memoizedTargetRefOrQuery as unknown as InternalQuery)._query.path.canonicalString()
+
+        console.error('Path:', path);
 
         const contextualError = new FirestorePermissionError({
           operation: 'list',

@@ -26,7 +26,12 @@ export async function POST(request: NextRequest) {
 
     // Step 1: Fetch the credit report from Firestore
     console.log('\n📥 [STEP 1] Fetching credit report from Firestore...');
-    const reportDoc = await adminDb.collection('creditReports').doc(reportId).get();
+    const reportDoc = await adminDb
+      .collection('users')
+      .doc(userId)
+      .collection('creditReports')
+      .doc(reportId)
+      .get();
     
     if (!reportDoc.exists) {
       console.log('❌ [API] Report not found');
@@ -38,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     const reportData = reportDoc.data();
     
-    // Verify the report belongs to the user
+    // Verify the report belongs to the user (redundant check but good for security)
     if (reportData?.userId !== userId) {
       console.log('❌ [API] Unauthorized access attempt');
       return NextResponse.json(

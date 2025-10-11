@@ -45,12 +45,12 @@ export default function DashboardPage() {
   const firestore = useFirestore();
 
   const transactionsQuery = useMemoFirebase(() => 
-    user ? query(collection(firestore, 'transactions'), where('userId', '==', user.uid), orderBy('date', 'desc')) : null
+    user ? query(collection(firestore, 'users', user.uid, 'transactions'), orderBy('date', 'desc')) : null
   , [firestore, user]);
   const { data: transactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsQuery);
 
   const documentsQuery = useMemoFirebase(() =>
-    user ? query(collection(firestore, 'documents'), where('userId', '==', user.uid), orderBy('uploadDate', 'desc')) : null
+    user ? query(collection(firestore, 'users', user.uid, 'documents'), orderBy('uploadDate', 'desc')) : null
   , [firestore, user]);
   const { data: documents, isLoading: documentsLoading } = useCollection<Document>(documentsQuery);
 

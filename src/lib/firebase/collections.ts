@@ -31,6 +31,12 @@ export type FirestoreCreditReport = CreditReport & {
 
 // Functions to get collection references, ensuring the db instance is passed.
 // This makes them usable on both client (with useFirestore) and server (with adminDb).
-export const getTransactionsCollection = (db: Firestore) => collection(db, 'transactions') as CollectionReference<FirestoreTransaction>;
-export const getDocumentsCollection = (db: Firestore) => collection(db, 'documents') as CollectionReference<FirestoreDocument>;
-export const getCreditReportsCollection = (db: Firestore) => collection(db, 'creditReports') as CollectionReference<FirestoreCreditReport>;
+// Collections are now user-scoped: users/{userId}/transactions, users/{userId}/documents, etc.
+export const getTransactionsCollection = (db: Firestore, userId: string) => 
+  collection(db, 'users', userId, 'transactions') as CollectionReference<FirestoreTransaction>;
+
+export const getDocumentsCollection = (db: Firestore, userId: string) => 
+  collection(db, 'users', userId, 'documents') as CollectionReference<FirestoreDocument>;
+
+export const getCreditReportsCollection = (db: Firestore, userId: string) => 
+  collection(db, 'users', userId, 'creditReports') as CollectionReference<FirestoreCreditReport>;

@@ -40,6 +40,24 @@ export default function LoginPage() {
     }
     try {
       const result = await signInWithPopup(auth, new GoogleAuthProvider());
+      
+      // Create or update user profile in Firestore
+      try {
+        await fetch('/api/create-user-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: result.user.uid,
+            email: result.user.email,
+            displayName: result.user.displayName,
+            photoURL: result.user.photoURL,
+          }),
+        });
+      } catch (profileError) {
+        console.error('Error creating user profile:', profileError);
+        // Don't block login if profile creation fails
+      }
+      
       toast({
         title: 'Login Successful',
         description: `Welcome back, ${result.user.displayName}!`,

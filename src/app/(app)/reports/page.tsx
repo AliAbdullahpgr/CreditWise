@@ -39,7 +39,7 @@ export default function ReportsPage() {
   const firestore = useFirestore();
   
   const creditReportsQuery = useMemoFirebase(() =>
-    user ? query(collection(firestore, 'creditReports'), where('userId', '==', user.uid), orderBy('generationDate', 'desc')) : null
+    user ? query(collection(firestore, 'users', user.uid, 'creditReports'), orderBy('generationDate', 'desc')) : null
   , [firestore, user]);
   const { data: creditReports, isLoading: reportsLoading } = useCollection<CreditReport>(creditReportsQuery);
 

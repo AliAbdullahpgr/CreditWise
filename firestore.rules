@@ -40,7 +40,7 @@ service cloud.firestore {
       }
 
       allow get: if isSignedIn() && isOwner(userId);
-      allow list: if false;
+      allow list: if isSignedIn() && isOwner(userId);
       allow create: if isSignedIn() && isOwner(userId);
       allow update: if isSignedIn() && isExistingOwner(userId);
       allow delete: if isSignedIn() && isExistingOwner(userId);
@@ -50,12 +50,12 @@ service cloud.firestore {
      * @description Rule for managing user documents.
      * @path /users/{userId}/documents/{documentId}
      * @allow (create) Authenticated user can create documents in their own folder.
-     * @allow (get, update, delete) Authenticated user can access and modify their own documents.
+     * @allow (get, list, update, delete) Authenticated user can access and modify their own documents.
      * @deny (create) User cannot create documents in another user's folder.
-     * @deny (get, update, delete) User cannot access or modify another user's documents.
+     * @deny (get, list, update, delete) User cannot access or modify another user's documents.
      * @principle Enforces document ownership for writes.
      */
-    match /users/{userId}/documents/{documentId} {
+    match /users/{userId}/documents/{documentId=**} {
       function isSignedIn() {
         return request.auth != null;
       }
@@ -68,11 +68,8 @@ service cloud.firestore {
         return isOwner(userId) && resource != null;
       }
 
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if false;
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isExistingOwner(userId);
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      allow read: if isSignedIn() && isOwner(userId);
+      allow write: if isSignedIn() && isOwner(userId);
     }
 
     /**
@@ -84,7 +81,7 @@ service cloud.firestore {
      * @deny (get, update, delete) User cannot access or modify another user's transactions.
      * @principle Enforces document ownership for writes.
      */
-    match /users/{userId}/transactions/{transactionId} {
+    match /users/{userId}/transactions/{transactionId=**} {
       function isSignedIn() {
         return request.auth != null;
       }
@@ -97,23 +94,20 @@ service cloud.firestore {
         return isOwner(userId) && resource != null;
       }
 
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if false;
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isExistingOwner(userId);
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      allow read: if isSignedIn() && isOwner(userId);
+      allow write: if isSignedIn() && isOwner(userId);
     }
 
     /**
      * @description Rule for managing user credit scores.
      * @path /users/{userId}/creditScores/{creditScoreId}
      * @allow (create) Authenticated user can create creditScores in their own folder.
-     * @allow (get, update, delete) Authenticated user can access and modify their own creditScores.
+     * @allow (get, list, update, delete) Authenticated user can access and modify their own creditScores.
      * @deny (create) User cannot create creditScores in another user's folder.
-     * @deny (get, update, delete) User cannot access or modify another user's creditScores.
+     * @deny (get, list, update, delete) User cannot access or modify another user's creditScores.
      * @principle Enforces document ownership for writes.
      */
-    match /users/{userId}/creditScores/{creditScoreId} {
+    match /users/{userId}/creditScores/{creditScoreId=**} {
       function isSignedIn() {
         return request.auth != null;
       }
@@ -126,11 +120,8 @@ service cloud.firestore {
         return isOwner(userId) && resource != null;
       }
 
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if false;
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isExistingOwner(userId);
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      allow read: if isSignedIn() && isOwner(userId);
+      allow write: if isSignedIn() && isOwner(userId);
     }
 
     /**
@@ -142,7 +133,7 @@ service cloud.firestore {
      * @deny (get, update, delete) User cannot access or modify another user's financialMetrics.
      * @principle Enforces document ownership for writes.
      */
-    match /users/{userId}/financialMetrics/{financialMetricsId} {
+    match /users/{userId}/financialMetrics/{financialMetricsId=**} {
       function isSignedIn() {
         return request.auth != null;
       }
@@ -155,11 +146,34 @@ service cloud.firestore {
         return isOwner(userId) && resource != null;
       }
 
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if false;
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isExistingOwner(userId);
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      allow read: if isSignedIn() && isOwner(userId);
+      allow write: if isSignedIn() && isOwner(userId);
+    }
+
+    /**
+     * @description Rule for managing user credit reports.
+     * @path /users/{userId}/creditReports/{reportId}
+     * @allow (create) Authenticated user can create credit reports in their own folder.
+     * @allow (get, list, update, delete) Authenticated user can access and modify their own credit reports.
+     * @deny (create) User cannot create credit reports in another user's folder.
+     * @deny (get, list, update, delete) User cannot access or modify another user's credit reports.
+     * @principle Enforces document ownership for writes.
+     */
+    match /users/{userId}/creditReports/{reportId=**} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow read: if isSignedIn() && isOwner(userId);
+      allow write: if isSignedIn() && isOwner(userId);
     }
   }
 }

@@ -1,7 +1,7 @@
-
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Card,
   CardContent,
@@ -28,71 +28,74 @@ import {
   AlertTriangle,
   Clock,
   X,
+  Loader2,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { extractTransactionsFromDocument } from '@/ai/flows/extract-transactions-from-document';
-import { auth } from '@/lib/firebase/config';
 import { createDocument, updateDocumentStatus } from '@/lib/firebase/firestore';
 import { onSnapshot, query, where, orderBy } from 'firebase/firestore';
 import { getDocumentsCollection } from '@/lib/firebase/collections';
-
+import { useUser } from '@/lib/firebase/auth';
 
 export default function DocumentsPage() {
+  const { user, loading: userLoading } = useUser();
+  const router = useRouter();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [filesToUpload, setFilesToUpload] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const [userId, setUserId] = useState<string | null>(null);
+  
+  useEffect(() => {
+    if (!userLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, userLoading, router]);
 
   useEffect(() => {
-    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
-      setUserId(user ? user.uid : 'user-test-001'); // Fallback to mock user for demo
-    });
-    return () => unsubscribeAuth();
-  }, []);
-
-  useEffect(() => {
-    if (!userId) return;
+    if (!user) return;
 
     console.log('\n🔔 [LISTENER] Setting up real-time listener for documents');
-    console.log('👤 [USER ID]', userId);
+    console.log('👤 [USER ID]', user.uid);
 
     const documentsCollection = getDocumentsCollection();
     const q = query(
       documentsCollection,
-      where('userId', '==', userId),
+      where('userId', '==', user.uid),
       orderBy('uploadDate', 'desc')
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log('🔔 [REAL-TIME UPDATE] Documents collection changed!');
-      console.log('📊 [COUNT]', snapshot.docs.length, 'document(s) found');
-      const documentData = snapshot.docs.map((doc, index) => {
-        const data = doc.data() as Document;
-        console.log(`  ${index + 1}. ${data.name} - Status: ${data.status}`);
-        return data;
-      });
-      setDocuments(documentData);
-      console.log('✅ [UI UPDATE] Documents state updated');
-    }, (error) => {
-        console.error("❌ [LISTENER ERROR] Error fetching documents:", error);
-        toast({
-            variant: "destructive",
-            title: "Could not load documents",
-            description: "Please try again later.",
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        console.log('🔔 [REAL-TIME UPDATE] Documents collection changed!');
+        console.log('📊 [COUNT]', snapshot.docs.length, 'document(s) found');
+        const documentData = snapshot.docs.map((doc, index) => {
+          const data = doc.data() as Document;
+          console.log(`  ${index + 1}. ${data.name} - Status: ${data.status}`);
+          return data;
         });
-    });
+        setDocuments(documentData);
+        console.log('✅ [UI UPDATE] Documents state updated');
+      },
+      (error) => {
+        console.error('❌ [LISTENER ERROR] Error fetching documents:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Could not load documents',
+          description: 'Please try again later.',
+        });
+      }
+    );
 
     return () => {
       console.log('🔌 [CLEANUP] Unsubscribing from documents listener');
       unsubscribe();
     };
-  }, [userId, toast]);
-
+  }, [user, toast]);
 
   const handleFileSelect = (selectedFiles: FileList | null) => {
     if (!selectedFiles) return;
@@ -114,7 +117,7 @@ export default function DocumentsPage() {
   const removeFile = (index: number) => {
     setFilesToUpload((prevFiles) => prevFiles.filter((_, i) => i !== index));
   };
-  
+
   const fileToDataUri = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -133,7 +136,7 @@ export default function DocumentsPage() {
       });
       return;
     }
-    if (!userId) {
+    if (!user) {
       toast({
         variant: 'destructive',
         title: 'Authentication Error',
@@ -141,17 +144,18 @@ export default function DocumentsPage() {
       });
       return;
     }
-  
+
     setIsUploading(true);
     setUploadProgress(0);
-  
+
     for (let i = 0; i < filesToUpload.length; i++) {
       const file = filesToUpload[i];
       let docId = '';
-  
+
       try {
-        // 1. Create placeholder document in Firestore
-        console.log(`\n📄 [FILE ${i + 1}/${filesToUpload.length}] Processing: ${file.name}`);
+        console.log(
+          `\n📄 [FILE ${i + 1}/${filesToUpload.length}] Processing: ${file.name}`
+        );
         const newDoc: Omit<Document, 'id'> = {
           name: file.name,
           uploadDate: new Date().toISOString(),
@@ -159,55 +163,65 @@ export default function DocumentsPage() {
           status: 'pending',
         };
 
-        // Skip Firebase Storage (requires paid plan) - use placeholder URL
-        console.log('⚠️ [STORAGE SKIP] Using placeholder URL instead of Firebase Storage');
-        const storagePath = `documents/${userId}/${Date.now()}_${file.name}`;
+        const storagePath = `documents/${user.uid}/${Date.now()}_${file.name}`;
         const downloadUrl = `placeholder://no-storage/${storagePath}`;
 
         console.log('💾 [FIRESTORE] Creating document record...');
-        docId = await createDocument(userId, newDoc, downloadUrl);
-        console.log('✅ [FIRESTORE] Document created with ID:', docId);        // 2. Call AI flow in a separate try/catch to handle processing errors
+        docId = await createDocument(user.uid, newDoc, downloadUrl);
+        console.log('✅ [FIRESTORE] Document created with ID:', docId);
+
         try {
           const dataUri = await fileToDataUri(file);
-          await extractTransactionsFromDocument({ document: dataUri }, userId, docId);
-          // Firestore listener will update the status to 'processed'
+          await extractTransactionsFromDocument(
+            { document: dataUri },
+            user.uid,
+            docId
+          );
         } catch (aiError) {
-          console.error("AI processing failed for", file.name, aiError);
-          const errorMessage = aiError instanceof Error ? aiError.message : 'Unknown AI processing error';
+          console.error('AI processing failed for', file.name, aiError);
+          const errorMessage =
+            aiError instanceof Error
+              ? aiError.message
+              : 'Unknown AI processing error';
           await updateDocumentStatus(docId, 'failed', 0, errorMessage);
           toast({
-            variant: "destructive",
-            title: "AI Processing Failed",
+            variant: 'destructive',
+            title: 'AI Processing Failed',
             description: `Could not process ${file.name}: ${errorMessage}`,
           });
         }
-  
       } catch (uploadError) {
-        console.error("Upload failed for", file.name, uploadError);
-        // If docId was created, update its status to 'failed'
+        console.error('Upload failed for', file.name, uploadError);
         if (docId) {
-          const errorMessage = uploadError instanceof Error ? uploadError.message : 'Unknown upload error';
-          await updateDocumentStatus(docId, 'failed', 0, `Upload failed: ${errorMessage}`);
+          const errorMessage =
+            uploadError instanceof Error
+              ? uploadError.message
+              : 'Unknown upload error';
+          await updateDocumentStatus(
+            docId,
+            'failed',
+            0,
+            `Upload failed: ${errorMessage}`
+          );
         }
         toast({
-          variant: "destructive",
-          title: "Upload Failed",
+          variant: 'destructive',
+          title: 'Upload Failed',
           description: `Could not upload ${file.name}. Please try again.`,
         });
       }
-  
+
       setUploadProgress(((i + 1) / filesToUpload.length) * 100);
     }
-  
+
     setIsUploading(false);
     setFilesToUpload([]);
-  
+
     toast({
       title: 'Upload complete',
       description: `${filesToUpload.length} document(s) have been sent for processing.`,
     });
   };
-
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -222,7 +236,9 @@ export default function DocumentsPage() {
     }
   };
 
-  const getStatusBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+  const getStatusBadgeVariant = (
+    status: string
+  ): 'default' | 'secondary' | 'destructive' | 'outline' => {
     switch (status) {
       case 'processed':
         return 'default';
@@ -234,6 +250,18 @@ export default function DocumentsPage() {
         return 'outline';
     }
   };
+
+  if (userLoading) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
+  if (!user) {
+     return null;
+  }
 
   return (
     <div className="space-y-8">
@@ -301,12 +329,18 @@ export default function DocumentsPage() {
                 ))}
               </div>
               {isUploading && (
-                <div className='space-y-2 pt-2'>
+                <div className="space-y-2 pt-2">
                   <Progress value={uploadProgress} />
-                  <p className="text-sm text-muted-foreground text-center">Processing...</p>
+                  <p className="text-sm text-muted-foreground text-center">
+                    Processing...
+                  </p>
                 </div>
               )}
-              <Button onClick={handleUpload} disabled={isUploading} className='w-full'>
+              <Button
+                onClick={handleUpload}
+                disabled={isUploading}
+                className="w-full"
+              >
                 <Upload className="mr-2 h-4 w-4" />
                 Upload & Process {filesToUpload.length} file(s)
               </Button>

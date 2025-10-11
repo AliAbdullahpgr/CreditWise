@@ -1,16 +1,52 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+'use client';
+
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { signInWithGoogle, auth } from '@/lib/firebase/auth';
+import { useToast } from '@/hooks/use-toast';
+import { onAuthStateChanged } from 'firebase/auth';
+import { useEffect } from 'react';
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        router.push('/dashboard');
+      }
+    });
+    return () => unsubscribe();
+  }, [router]);
+
+  const handleGoogleLogin = async () => {
+    const user = await signInWithGoogle();
+    if (user) {
+      toast({
+        title: 'Login Successful',
+        description: `Welcome back, ${user.displayName}!`,
+      });
+      router.push('/dashboard');
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Login Failed',
+        description: 'Could not log in with Google. Please try again.',
+      });
+    }
+  };
+
   return (
     <Card className="mx-auto max-w-sm w-full">
       <CardHeader>
@@ -28,6 +64,7 @@ export default function LoginPage() {
               type="email"
               placeholder="m@example.com"
               required
+              disabled
             />
           </div>
           <div className="grid gap-2">
@@ -37,17 +74,21 @@ export default function LoginPage() {
                 Forgot your password?
               </Link>
             </div>
-            <Input id="password" type="password" required />
+            <Input id="password" type="password" required disabled />
           </div>
-          <Button type="submit" className="w-full" asChild>
-            <Link href="/dashboard">Login</Link>
+          <Button type="submit" className="w-full" disabled>
+            Login (Coming Soon)
           </Button>
-          <Button variant="outline" className="w-full" asChild>
-             <Link href="/dashboard">Login with Google</Link>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={handleGoogleLogin}
+          >
+            Login with Google
           </Button>
         </div>
         <div className="mt-4 text-center text-sm">
-          Don&apos;t have an account?{" "}
+          Don&apos;t have an account?{' '}
           <Link href="/signup" className="underline">
             Sign up
           </Link>

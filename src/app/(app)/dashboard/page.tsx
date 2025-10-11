@@ -1,13 +1,14 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -15,15 +16,15 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ScoreGauge } from "@/components/score-gauge";
-import { ExpenseChart, ScoreHistoryChart } from "@/components/charts";
-import { AlternativeCreditScoreInfo } from "@/components/alternative-credit-info";
-import { ScoreBreakdown } from "@/components/score-breakdown";
-import { userFinancials } from "@/lib/data";
-import { Transaction, Document } from "@/lib/types";
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ScoreGauge } from '@/components/score-gauge';
+import { ExpenseChart, ScoreHistoryChart } from '@/components/charts';
+import { AlternativeCreditScoreInfo } from '@/components/alternative-credit-info';
+import { ScoreBreakdown } from '@/components/score-breakdown';
+import { userFinancials } from '@/lib/data';
+import { Transaction, Document } from '@/lib/types';
 import {
   ArrowUpRight,
   ArrowDownLeft,
@@ -32,30 +33,31 @@ import {
   PiggyBank,
   TrendingUp,
   FileText,
-} from "lucide-react";
-import Link from "next/link";
-import { onSnapshot, query, where, orderBy } from "firebase/firestore";
-import { auth } from "@/lib/firebase/config";
+  Loader2,
+} from 'lucide-react';
+import Link from 'next/link';
+import { onSnapshot, query, where, orderBy } from 'firebase/firestore';
 import {
   getTransactionsCollection,
   getDocumentsCollection,
-} from "@/lib/firebase/collections";
+} from '@/lib/firebase/collections';
+import { useUser } from '@/lib/firebase/auth';
 
 export default function DashboardPage() {
+  const { user, loading: userLoading } = useUser();
+  const router = useRouter();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
-      setUserId(user ? user.uid : "user-test-001"); // Fallback to mock user for demo
-    });
-    return () => unsubscribeAuth();
-  }, []);
+    if (!userLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, userLoading, router]);
 
   useEffect(() => {
-    if (!userId) {
+    if (!user) {
       setLoading(false);
       return;
     }
@@ -65,29 +67,29 @@ export default function DashboardPage() {
 
     const transQuery = query(
       transactionsCollection,
-      where("userId", "==", userId),
-      orderBy("date", "desc"),
+      where('userId', '==', user.uid),
+      orderBy('date', 'desc')
     );
 
     const docQuery = query(
       documentsCollection,
-      where("userId", "==", userId),
-      orderBy("uploadDate", "desc"),
+      where('userId', '==', user.uid),
+      orderBy('uploadDate', 'desc')
     );
 
     const unsubscribeTransactions = onSnapshot(
       transQuery,
       (snapshot) => {
         const transactionData = snapshot.docs.map(
-          (doc) => doc.data() as Transaction,
+          (doc) => doc.data() as Transaction
         );
         setTransactions(transactionData);
         setLoading(false);
       },
       (error) => {
-        console.error("Error fetching transactions:", error);
+        console.error('Error fetching transactions:', error);
         setLoading(false);
-      },
+      }
     );
 
     const unsubscribeDocuments = onSnapshot(
@@ -97,28 +99,40 @@ export default function DashboardPage() {
         setDocuments(documentData);
       },
       (error) => {
-        console.error("Error fetching documents:", error);
-      },
+        console.error('Error fetching documents:', error);
+      }
     );
 
     return () => {
       unsubscribeTransactions();
       unsubscribeDocuments();
     };
-  }, [userId]);
+  }, [user]);
 
   const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
+    new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
     }).format(amount);
 
   const latestDocument = documents
-    .filter((d) => d.status === "processed")
+    .filter((d) => d.status === 'processed')
     .sort(
       (a, b) =>
-        new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime(),
+        new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime()
     )[0];
+
+  if (userLoading || loading) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
+  if (!user) {
+     return null; // or a message telling to login
+  }
 
   return (
     <div className="grid gap-6 md:gap-8">
@@ -129,7 +143,7 @@ export default function DashboardPage() {
               Alternative Credit Score
             </CardTitle>
             <CardDescription>
-              For informal economy workers • Updated:{" "}
+              For informal economy workers • Updated:{' '}
               {new Date().toLocaleDateString()}
             </CardDescription>
           </CardHeader>
@@ -218,7 +232,7 @@ export default function DashboardPage() {
                       {latestDocument.name}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Processed on{" "}
+                      Processed on{' '}
                       {new Date(latestDocument.uploadDate).toLocaleDateString()}
                     </p>
                   </div>
@@ -290,7 +304,7 @@ export default function DashboardPage() {
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={4} className="h-24 text-center">
-                    Loading...
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
                   </TableCell>
                 </TableRow>
               ) : transactions.length > 0 ? (
@@ -310,12 +324,12 @@ export default function DashboardPage() {
                     </TableCell>
                     <TableCell
                       className={`text-right font-semibold ${
-                        transaction.type === "income"
-                          ? "text-green-600"
-                          : "text-red-600"
+                        transaction.type === 'income'
+                          ? 'text-green-600'
+                          : 'text-red-600'
                       }`}
                     >
-                      {transaction.type === "income" ? "+" : "-"}
+                      {transaction.type === 'income' ? '+' : '-'}
                       {formatCurrency(Math.abs(transaction.amount))}
                     </TableCell>
                   </TableRow>

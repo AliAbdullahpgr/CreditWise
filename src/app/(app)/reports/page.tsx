@@ -1,14 +1,14 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -16,42 +16,42 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { CreditReport } from "@/lib/types";
-import { PlusCircle, Download, Eye, Loader2 } from "lucide-react";
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { CreditReport } from '@/lib/types';
+import { PlusCircle, Download, Eye, Loader2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { MoreHorizontal } from "lucide-react";
+} from '@/components/ui/dropdown-menu';
+import { MoreHorizontal } from 'lucide-react';
 import { onSnapshot, query, where, orderBy } from 'firebase/firestore';
-import { auth } from '@/lib/firebase/config';
-import { getCreditReportsCollection, getTransactionsCollection } from '@/lib/firebase/collections';
+import { getCreditReportsCollection } from '@/lib/firebase/collections';
 import { useToast } from '@/hooks/use-toast';
 import { ReportViewDialog } from '@/components/report-view-dialog';
+import { useUser } from '@/lib/firebase/auth';
 
 export default function ReportsPage() {
+  const { user, loading: userLoading } = useUser();
+  const router = useRouter();
   const [creditReports, setCreditReports] = useState<CreditReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
   const [selectedReport, setSelectedReport] = useState<CreditReport | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
-      setUserId(user ? user.uid : 'user-test-001'); // Fallback to mock user for demo
-    });
-    return () => unsubscribeAuth();
-  }, []);
+    if (!userLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, userLoading, router]);
 
   useEffect(() => {
-    if (!userId) {
+    if (!user) {
       setLoading(false);
       return;
     }
@@ -59,42 +59,45 @@ export default function ReportsPage() {
     const creditReportsCollection = getCreditReportsCollection();
     const q = query(
       creditReportsCollection,
-      where('userId', '==', userId),
+      where('userId', '==', user.uid),
       orderBy('generationDate', 'desc')
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const reportData = snapshot.docs.map(doc => doc.data() as CreditReport);
-      setCreditReports(reportData);
-      setLoading(false);
-    }, (error) => {
-        console.error("Error fetching reports:", error);
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const reportData = snapshot.docs.map((doc) => doc.data() as CreditReport);
+        setCreditReports(reportData);
         setLoading(false);
-    });
+      },
+      (error) => {
+        console.error('Error fetching reports:', error);
+        setLoading(false);
+      }
+    );
 
     return () => unsubscribe();
-  }, [userId]);
-  
+  }, [user]);
+
   const handleGenerateReport = async () => {
-    if (!userId) {
+    if (!user) {
       toast({
         title: 'Authentication Required',
         description: 'Please sign in to generate a credit report.',
-        variant: 'destructive'
+        variant: 'destructive',
       });
       return;
     }
 
     setIsGenerating(true);
     console.log('\n🚀 [REPORT] Starting credit report generation...');
-    
+
     try {
-      // Step 1: Fetch user transactions
       console.log('📥 [STEP 1] Fetching user transactions...');
       const response = await fetch('/api/generate-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId }),
+        body: JSON.stringify({ userId: user.uid }),
       });
 
       if (!response.ok) {
@@ -113,8 +116,9 @@ export default function ReportsPage() {
       console.error('❌ [REPORT] Error generating report:', error);
       toast({
         title: 'Report Generation Failed',
-        description: error.message || 'Failed to generate credit report. Please try again.',
-        variant: 'destructive'
+        description:
+          error.message || 'Failed to generate credit report. Please try again.',
+        variant: 'destructive',
       });
     } finally {
       setIsGenerating(false);
@@ -128,37 +132,34 @@ export default function ReportsPage() {
   };
 
   const handleDownloadPDF = async (report: CreditReport) => {
+    if (!user) return;
     console.log('📥 [DOWNLOAD] Generating PDF for report:', report.id);
-    
+
     try {
       toast({
         title: 'Generating PDF...',
         description: 'Please wait while we prepare your report.',
       });
 
-      // Call PDF generation API
       const response = await fetch('/api/generate-pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reportId: report.id, userId }),
+        body: JSON.stringify({ reportId: report.id, userId: user.uid }),
       });
 
       if (!response.ok) {
         throw new Error('Failed to generate PDF');
       }
 
-      // Get the PDF blob
       const blob = await response.blob();
-      
-      // Create download link
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `credit-report-${report.id.substring(0, 8)}-${new Date().toISOString().split('T')[0]}.pdf`;
+      a.download = `credit-report-${report.id.substring(0, 8)}-${
+        new Date().toISOString().split('T')[0]
+      }.pdf`;
       document.body.appendChild(a);
       a.click();
-      
-      // Cleanup
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
@@ -176,6 +177,17 @@ export default function ReportsPage() {
     }
   };
 
+  if (userLoading || loading) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null; 
+  }
 
   return (
     <div className="space-y-8">
@@ -211,12 +223,12 @@ export default function ReportsPage() {
             </TableHeader>
             <TableBody>
               {loading ? (
-                 <TableRow>
+                <TableRow>
                   <TableCell
                     colSpan={5}
                     className="h-24 text-center text-muted-foreground"
                   >
-                    Loading reports...
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
                   </TableCell>
                 </TableRow>
               ) : creditReports.length > 0 ? (
@@ -234,9 +246,9 @@ export default function ReportsPage() {
                     <TableCell className="hidden md:table-cell">
                       <Badge
                         variant={
-                          report.grade === "A" || report.grade === "B"
-                            ? "default"
-                            : "destructive"
+                          report.grade === 'A' || report.grade === 'B'
+                            ? 'default'
+                            : 'destructive'
                         }
                       >
                         {report.grade}
@@ -255,7 +267,9 @@ export default function ReportsPage() {
                             <Eye className="mr-2 h-4 w-4" />
                             View
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDownloadPDF(report)}>
+                          <DropdownMenuItem
+                            onClick={() => handleDownloadPDF(report)}
+                          >
                             <Download className="mr-2 h-4 w-4" />
                             Download PDF
                           </DropdownMenuItem>
@@ -280,7 +294,7 @@ export default function ReportsPage() {
       </Card>
 
       {/* Report View Dialog */}
-      <ReportViewDialog 
+      <ReportViewDialog
         report={selectedReport}
         open={viewDialogOpen}
         onOpenChange={setViewDialogOpen}

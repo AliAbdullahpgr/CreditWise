@@ -93,8 +93,8 @@ export default function SignupPage() {
         description: 'Please check your email to verify your account before logging in.',
       });
       
-      // Redirect to login page
-      router.push('/login');
+      // Redirect to verify-email page
+      router.push('/verify-email');
     } catch (error: any) {
       let description = 'An unexpected error occurred. Please try again.';
       if (error.code === 'auth/email-already-in-use') {

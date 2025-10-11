@@ -2,11 +2,12 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser } from '@/firebase';
+import { useUser, useAuth } from '@/firebase';
 import { Loader2 } from 'lucide-react';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
+  const auth = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -17,13 +18,15 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // If user exists but email is not verified, redirect to login
-      if (!user.emailVerified) {
-        router.push('/login');
+      // If user exists but email is not verified, sign them out and redirect
+      if (!user.emailVerified && auth) {
+        auth.signOut().then(() => {
+          router.push('/verify-email');
+        });
         return;
       }
     }
-  }, [user, isUserLoading, router]);
+  }, [user, isUserLoading, auth, router]);
 
   // Show loading state while checking authentication
   if (isUserLoading) {

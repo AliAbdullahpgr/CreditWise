@@ -79,18 +79,15 @@ export default function LoginPage() {
       
       // Check if email is verified
       if (!userCredential.user.emailVerified) {
-        // Store user info for resending verification email
-        setLastUnverifiedUser(userCredential.user);
-        setShowResendSection(true);
-        
-        // CRITICAL: Sign out immediately to prevent auto-redirect to dashboard
-        await auth.signOut();
-        
+        // Don't sign out - keep user authenticated so they can resend verification
         toast({
           variant: 'destructive',
           title: 'Email Not Verified',
-          description: 'Please verify your email before logging in. Use the "Resend Verification Email" button below.',
+          description: 'Please verify your email before logging in. Redirecting to verification page...',
         });
+        
+        // Redirect to verify-email page
+        router.push('/verify-email');
         return;
       }
       

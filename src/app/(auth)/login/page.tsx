@@ -84,9 +84,6 @@ export default function LoginPage() {
         setLastUnverifiedUser(userCredential.user);
         setShowResendSection(true);
         
-        // CRITICAL: Sign out immediately to prevent auto-redirect to dashboard
-        await auth.signOut();
-        
         toast({
           variant: 'destructive',
           title: 'Email Not Verified',

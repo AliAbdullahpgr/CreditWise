@@ -36,7 +36,8 @@ export default function LoginPage() {
   const [lastUnverifiedUser, setLastUnverifiedUser] = useState<any>(null);
 
   useEffect(() => {
-    if (!isUserLoading && user) {
+    // Only redirect verified users to dashboard
+    if (!isUserLoading && user && user.emailVerified) {
       router.push('/dashboard');
     }
   }, [user, isUserLoading, router]);
@@ -77,16 +78,18 @@ export default function LoginPage() {
         password
       );
       
+      // Reload user to get fresh email verification status
+      await userCredential.user.reload();
+      
       // Check if email is verified
       if (!userCredential.user.emailVerified) {
-        // Don't sign out - keep user authenticated so they can resend verification
+        // Keep user authenticated so they can check verification status
         toast({
-          variant: 'destructive',
           title: 'Email Not Verified',
-          description: 'Please verify your email before logging in. Redirecting to verification page...',
+          description: 'Please verify your email. We\'ll check your status automatically.',
         });
         
-        // Redirect to verify-email page
+        // Redirect to verify-email page (user stays authenticated)
         router.push('/verify-email');
         return;
       }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,14 +11,17 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useUser, useAuth } from '@/firebase';
-import { Loader2, Mail, CheckCircle2 } from 'lucide-react';
+import { Loader2, Mail, CheckCircle2, RefreshCw } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 
 export default function VerifyEmailPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
+  const [isChecking, setIsChecking] = useState(false);
 
   useEffect(() => {
     // If user is already verified, redirect to dashboard
@@ -26,6 +29,64 @@ export default function VerifyEmailPage() {
       router.push('/dashboard');
     }
   }, [user, isUserLoading, router]);
+
+  // Auto-check verification status every 3 seconds if user is logged in
+  useEffect(() => {
+    if (!user || user.emailVerified) return;
+
+    const interval = setInterval(async () => {
+      try {
+        await user.reload();
+        // If verified, the useEffect above will redirect
+      } catch (error) {
+        // Ignore errors during auto-check
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [user]);
+
+  const handleCheckVerification = async () => {
+    if (!auth?.currentUser) {
+      toast({
+        title: 'Please Login',
+        description: 'Please log in with your email and password to check verification status.',
+      });
+      router.push('/login');
+      return;
+    }
+
+    setIsChecking(true);
+
+    try {
+      // Reload user to get latest emailVerified status from Firebase
+      await auth.currentUser.reload();
+      
+      const updatedUser = auth.currentUser;
+      
+      if (updatedUser.emailVerified) {
+        toast({
+          title: 'Email Verified! 🎉',
+          description: 'Your email has been verified. Redirecting to dashboard...',
+        });
+        // The useEffect will handle the redirect
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Not Verified Yet',
+          description: 'Please click the verification link in your email first.',
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to check verification status. Please try again.',
+      });
+    } finally {
+      setIsChecking(false);
+    }
+  };
 
   const handleBackToLogin = async () => {
     if (auth) {
@@ -77,18 +138,45 @@ export default function VerifyEmailPage() {
           <Alert>
             <Mail className="h-4 w-4" />
             <AlertDescription>
-              Please check your email inbox (and spam folder) for a verification link. 
-              Click the link to verify your email address.
+              {user ? (
+                <>
+                  <p className="mb-2">Please check your email inbox (and spam folder) for a verification link.</p>
+                  <p className="text-xs text-muted-foreground">
+                    We're automatically checking your verification status...
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="mb-2">Please check your email inbox (and spam folder) for a verification link.</p>
+                  <p className="text-xs text-muted-foreground">
+                    After clicking the link, please log in to continue.
+                  </p>
+                </>
+              )}
             </AlertDescription>
           </Alert>
 
           <div className="space-y-3">
+            {user && (
+              <Button
+                onClick={handleCheckVerification}
+                disabled={isChecking}
+                className="w-full"
+              >
+                {isChecking ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Checking...</>
+                ) : (
+                  <><RefreshCw className="mr-2 h-4 w-4" /> Check Verification Status</>
+                )}
+              </Button>
+            )}
+            
             <Button
               onClick={handleBackToLogin}
-              variant="ghost"
+              variant={user ? "ghost" : "default"}
               className="w-full"
             >
-              Back to Login
+              {user ? 'Sign Out & Go to Login' : 'Go to Login'}
             </Button>
           </div>
 

@@ -18,15 +18,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // If user exists but email is not verified, sign them out and redirect
-      if (!user.emailVerified && auth) {
-        auth.signOut().then(() => {
-          router.push('/verify-email');
-        });
+      // If user exists but email is not verified, redirect to verify-email
+      // Keep them authenticated so they can check verification status
+      if (!user.emailVerified) {
+        router.push('/verify-email');
         return;
       }
     }
-  }, [user, isUserLoading, auth, router]);
+  }, [user, isUserLoading, router]);
 
   // Show loading state while checking authentication
   if (isUserLoading) {

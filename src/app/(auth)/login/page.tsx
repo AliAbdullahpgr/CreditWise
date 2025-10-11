@@ -36,7 +36,8 @@ export default function LoginPage() {
   const [lastUnverifiedUser, setLastUnverifiedUser] = useState<any>(null);
 
   useEffect(() => {
-    if (!isUserLoading && user) {
+    // Only redirect if user is fully authenticated and verified
+    if (!isUserLoading && user && user.emailVerified) {
       router.push('/dashboard');
     }
   }, [user, isUserLoading, router]);
@@ -171,10 +172,20 @@ export default function LoginPage() {
     }
   };
 
-  if (isUserLoading || user) {
+  if (isUserLoading) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-secondary p-4">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Prevent flash of login page if user is already logged in and verified
+  if (user && user.emailVerified) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-secondary p-4">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+        <p className="mt-4 text-sm text-muted-foreground">Redirecting to dashboard...</p>
       </div>
     );
   }
@@ -267,5 +278,3 @@ export default function LoginPage() {
     </Card>
   );
 }
-
-    

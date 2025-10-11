@@ -37,71 +37,29 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
-import { onSnapshot, query, where, orderBy } from 'firebase/firestore';
-import { getTransactionsCollection } from '@/lib/firebase/collections';
-import { useUser } from '@/lib/firebase/auth';
+import { collection, query, where, orderBy } from 'firebase/firestore';
+import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { Loader2 } from 'lucide-react';
 
 export default function TransactionsPage() {
-  const { user, loading: userLoading } = useUser();
+  const { user, isUserLoading } = useUser();
   const router = useRouter();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const firestore = useFirestore();
+  
+  const transactionsQuery = useMemoFirebase(() =>
+    user ? query(collection(firestore, 'transactions'), where('userId', '==', user.uid), orderBy('date', 'desc')) : null
+  , [firestore, user]);
+  const { data: transactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsQuery);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
-  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    if (!userLoading && !user) {
+    if (!isUserLoading && !user) {
       router.push('/login');
     }
-  }, [user, userLoading, router]);
-
-  useEffect(() => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    console.log(
-      '\n🔔 [TRANSACTIONS LISTENER] Setting up real-time listener for transactions'
-    );
-    console.log('👤 [USER ID]', user.uid);
-
-    const transactionsCollection = getTransactionsCollection();
-    const q = query(
-      transactionsCollection,
-      where('userId', '==', user.uid),
-      orderBy('date', 'desc')
-    );
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        console.log('🔔 [REAL-TIME UPDATE] Transactions collection changed!');
-        console.log('📊 [COUNT]', snapshot.docs.length, 'transaction(s) found');
-        const transactionData = snapshot.docs.map((doc, index) => {
-          const data = doc.data() as Transaction;
-          console.log(
-            `  ${index + 1}. ${data.merchant} - $${data.amount} (${data.type})`
-          );
-          return data;
-        });
-        setTransactions(transactionData);
-        setLoading(false);
-        console.log('✅ [UI UPDATE] Transactions state updated in UI');
-      },
-      (error) => {
-        console.error('❌ [LISTENER ERROR] Error fetching transactions:', error);
-        setLoading(false);
-      }
-    );
-
-    return () => {
-      console.log('🔌 [CLEANUP] Unsubscribing from transactions listener');
-      unsubscribe();
-    };
-  }, [user]);
+  }, [user, isUserLoading, router]);
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('en-US', {
@@ -110,14 +68,14 @@ export default function TransactionsPage() {
     }).format(amount);
 
   const allCategories = useMemo(
-    () => [...new Set(transactions.map((t) => t.category))],
+    () => [...new Set((transactions || []).map((t) => t.category))],
     [transactions]
   );
 
   // Filter transactions based on search and filters
   const filteredTransactions = useMemo(
     () =>
-      transactions.filter((transaction) => {
+      (transactions || []).filter((transaction) => {
         const matchesSearch = transaction.merchant
           .toLowerCase()
           .includes(searchTerm.toLowerCase());
@@ -130,7 +88,7 @@ export default function TransactionsPage() {
     [transactions, searchTerm, filterType, filterCategory]
   );
 
-  if (userLoading || loading) {
+  if (isUserLoading || transactionsLoading) {
     return (
       <div className="flex justify-center items-center h-full">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -194,7 +152,7 @@ export default function TransactionsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {loading ? (
+            {transactionsLoading ? (
               <TableRow>
                 <TableCell
                   colSpan={5}

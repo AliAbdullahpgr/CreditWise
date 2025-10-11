@@ -35,14 +35,19 @@ import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { extractTransactionsFromDocument } from '@/ai/flows/extract-transactions-from-document';
 import { createDocument, updateDocumentStatus } from '@/lib/firebase/firestore';
-import { onSnapshot, query, where, orderBy } from 'firebase/firestore';
-import { getDocumentsCollection } from '@/lib/firebase/collections';
-import { useUser } from '@/lib/firebase/auth';
+import { collection, query, where, orderBy } from 'firebase/firestore';
+import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
 
 export default function DocumentsPage() {
-  const { user, loading: userLoading } = useUser();
+  const { user, isUserLoading } = useUser();
   const router = useRouter();
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const firestore = useFirestore();
+
+  const documentsQuery = useMemoFirebase(() =>
+    user ? query(collection(firestore, 'documents'), where('userId', '==', user.uid), orderBy('uploadDate', 'desc')) : null
+  , [firestore, user]);
+  const { data: documents, isLoading: documentsLoading } = useCollection<Document>(documentsQuery);
+
   const [filesToUpload, setFilesToUpload] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -50,52 +55,10 @@ export default function DocumentsPage() {
   const { toast } = useToast();
   
   useEffect(() => {
-    if (!userLoading && !user) {
+    if (!isUserLoading && !user) {
       router.push('/login');
     }
-  }, [user, userLoading, router]);
-
-  useEffect(() => {
-    if (!user) return;
-
-    console.log('\n🔔 [LISTENER] Setting up real-time listener for documents');
-    console.log('👤 [USER ID]', user.uid);
-
-    const documentsCollection = getDocumentsCollection();
-    const q = query(
-      documentsCollection,
-      where('userId', '==', user.uid),
-      orderBy('uploadDate', 'desc')
-    );
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        console.log('🔔 [REAL-TIME UPDATE] Documents collection changed!');
-        console.log('📊 [COUNT]', snapshot.docs.length, 'document(s) found');
-        const documentData = snapshot.docs.map((doc, index) => {
-          const data = doc.data() as Document;
-          console.log(`  ${index + 1}. ${data.name} - Status: ${data.status}`);
-          return data;
-        });
-        setDocuments(documentData);
-        console.log('✅ [UI UPDATE] Documents state updated');
-      },
-      (error) => {
-        console.error('❌ [LISTENER ERROR] Error fetching documents:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Could not load documents',
-          description: 'Please try again later.',
-        });
-      }
-    );
-
-    return () => {
-      console.log('🔌 [CLEANUP] Unsubscribing from documents listener');
-      unsubscribe();
-    };
-  }, [user, toast]);
+  }, [user, isUserLoading, router]);
 
   const handleFileSelect = (selectedFiles: FileList | null) => {
     if (!selectedFiles) return;
@@ -251,7 +214,7 @@ export default function DocumentsPage() {
     }
   };
 
-  if (userLoading) {
+  if (isUserLoading || documentsLoading) {
     return (
       <div className="flex justify-center items-center h-full">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -388,7 +351,7 @@ export default function DocumentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {documents.length > 0 ? (
+              {documents && documents.length > 0 ? (
                 documents.map((doc) => (
                   <TableRow key={doc.id}>
                     <TableCell className="font-medium">{doc.name}</TableCell>

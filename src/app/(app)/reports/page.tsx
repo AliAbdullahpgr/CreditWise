@@ -28,56 +28,31 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal } from 'lucide-react';
-import { onSnapshot, query, where, orderBy } from 'firebase/firestore';
-import { getCreditReportsCollection } from '@/lib/firebase/collections';
+import { collection, query, where, orderBy } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { ReportViewDialog } from '@/components/report-view-dialog';
-import { useUser } from '@/lib/firebase/auth';
+import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
 
 export default function ReportsPage() {
-  const { user, loading: userLoading } = useUser();
+  const { user, isUserLoading } = useUser();
   const router = useRouter();
-  const [creditReports, setCreditReports] = useState<CreditReport[]>([]);
-  const [loading, setLoading] = useState(true);
+  const firestore = useFirestore();
+  
+  const creditReportsQuery = useMemoFirebase(() =>
+    user ? query(collection(firestore, 'creditReports'), where('userId', '==', user.uid), orderBy('generationDate', 'desc')) : null
+  , [firestore, user]);
+  const { data: creditReports, isLoading: reportsLoading } = useCollection<CreditReport>(creditReportsQuery);
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedReport, setSelectedReport] = useState<CreditReport | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!userLoading && !user) {
+    if (!isUserLoading && !user) {
       router.push('/login');
     }
-  }, [user, userLoading, router]);
-
-  useEffect(() => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    const creditReportsCollection = getCreditReportsCollection();
-    const q = query(
-      creditReportsCollection,
-      where('userId', '==', user.uid),
-      orderBy('generationDate', 'desc')
-    );
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const reportData = snapshot.docs.map((doc) => doc.data() as CreditReport);
-        setCreditReports(reportData);
-        setLoading(false);
-      },
-      (error) => {
-        console.error('Error fetching reports:', error);
-        setLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [user]);
+  }, [user, isUserLoading, router]);
 
   const handleGenerateReport = async () => {
     if (!user) {
@@ -177,7 +152,7 @@ export default function ReportsPage() {
     }
   };
 
-  if (userLoading || loading) {
+  if (isUserLoading || reportsLoading) {
     return (
       <div className="flex justify-center items-center h-full">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -222,7 +197,7 @@ export default function ReportsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading ? (
+              {reportsLoading ? (
                 <TableRow>
                   <TableCell
                     colSpan={5}
@@ -231,7 +206,7 @@ export default function ReportsPage() {
                     <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
                   </TableCell>
                 </TableRow>
-              ) : creditReports.length > 0 ? (
+              ) : creditReports && creditReports.length > 0 ? (
                 creditReports.map((report) => (
                   <TableRow key={report.id}>
                     <TableCell className="font-mono text-sm">

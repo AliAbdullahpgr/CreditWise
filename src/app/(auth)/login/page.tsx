@@ -12,40 +12,52 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { signInWithGoogle, auth } from '@/lib/firebase/auth';
 import { useToast } from '@/hooks/use-toast';
-import { onAuthStateChanged } from 'firebase/auth';
+import { useUser, useAuth } from '@/firebase';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useEffect } from 'react';
 
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { user, isUserLoading } = useUser();
+  const auth = useAuth();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        router.push('/dashboard');
-      }
-    });
-    return () => unsubscribe();
-  }, [router]);
+    if (!isUserLoading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, isUserLoading, router]);
 
   const handleGoogleLogin = async () => {
-    const user = await signInWithGoogle();
-    if (user) {
+    if (!auth) {
+      toast({
+        variant: 'destructive',
+        title: 'Login Failed',
+        description: 'Firebase Authentication is not available.',
+      });
+      return;
+    }
+    try {
+      const result = await signInWithPopup(auth, new GoogleAuthProvider());
       toast({
         title: 'Login Successful',
-        description: `Welcome back, ${user.displayName}!`,
+        description: `Welcome back, ${result.user.displayName}!`,
       });
       router.push('/dashboard');
-    } else {
-      toast({
+    } catch (error) {
+       console.error('Error signing in with Google:', error);
+       toast({
         variant: 'destructive',
         title: 'Login Failed',
         description: 'Could not log in with Google. Please try again.',
       });
     }
   };
+
+  if (isUserLoading || user) {
+    return null; // Or a loading spinner
+  }
 
   return (
     <Card className="mx-auto max-w-sm w-full">

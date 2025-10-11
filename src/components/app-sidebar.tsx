@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   SidebarHeader,
   SidebarMenu,
@@ -19,8 +19,9 @@ import {
   LogOut,
 } from 'lucide-react';
 import Logo from './logo';
-import { logOut } from '@/lib/firebase/auth';
+import { useAuth } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { signOut } from 'firebase/auth';
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -32,14 +33,34 @@ const navItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const auth = useAuth();
+  const router = useRouter();
   const { toast } = useToast();
 
   const handleLogout = async () => {
-    await logOut();
-    toast({
-      title: 'Logged Out',
-      description: 'You have been successfully logged out.',
-    });
+    if (!auth) {
+      toast({
+        variant: 'destructive',
+        title: 'Logout Failed',
+        description: 'Firebase Authentication is not available.',
+      });
+      return;
+    }
+    try {
+      await signOut(auth);
+      toast({
+        title: 'Logged Out',
+        description: 'You have been successfully logged out.',
+      });
+      router.push('/login');
+    } catch (error) {
+      console.error('Error signing out: ', error);
+      toast({
+        variant: 'destructive',
+        title: 'Logout Failed',
+        description: 'There was an error logging you out. Please try again.',
+      });
+    }
   };
 
   return (
@@ -66,12 +87,10 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter className="p-2">
         <SidebarMenuItem>
-          <Link href="/" onClick={handleLogout}>
-            <SidebarMenuButton tooltip="Logout">
-              <LogOut />
-              <span>Logout</span>
-            </SidebarMenuButton>
-          </Link>
+          <SidebarMenuButton tooltip="Logout" onClick={handleLogout}>
+            <LogOut />
+            <span>Logout</span>
+          </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarFooter>
     </>

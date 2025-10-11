@@ -36,78 +36,30 @@ import {
   Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
-import { onSnapshot, query, where, orderBy } from 'firebase/firestore';
-import {
-  getTransactionsCollection,
-  getDocumentsCollection,
-} from '@/lib/firebase/collections';
-import { useUser } from '@/lib/firebase/auth';
+import { collection, query, where, orderBy } from 'firebase/firestore';
+import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
 
 export default function DashboardPage() {
-  const { user, loading: userLoading } = useUser();
+  const { user, isUserLoading } = useUser();
   const router = useRouter();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [loading, setLoading] = useState(true);
+  const firestore = useFirestore();
+
+  const transactionsQuery = useMemoFirebase(() => 
+    user ? query(collection(firestore, 'transactions'), where('userId', '==', user.uid), orderBy('date', 'desc')) : null
+  , [firestore, user]);
+  const { data: transactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsQuery);
+
+  const documentsQuery = useMemoFirebase(() =>
+    user ? query(collection(firestore, 'documents'), where('userId', '==', user.uid), orderBy('uploadDate', 'desc')) : null
+  , [firestore, user]);
+  const { data: documents, isLoading: documentsLoading } = useCollection<Document>(documentsQuery);
 
   useEffect(() => {
-    if (!userLoading && !user) {
+    if (!isUserLoading && !user) {
       router.push('/login');
     }
-  }, [user, userLoading, router]);
+  }, [user, isUserLoading, router]);
 
-  useEffect(() => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    const transactionsCollection = getTransactionsCollection();
-    const documentsCollection = getDocumentsCollection();
-
-    const transQuery = query(
-      transactionsCollection,
-      where('userId', '==', user.uid),
-      orderBy('date', 'desc')
-    );
-
-    const docQuery = query(
-      documentsCollection,
-      where('userId', '==', user.uid),
-      orderBy('uploadDate', 'desc')
-    );
-
-    const unsubscribeTransactions = onSnapshot(
-      transQuery,
-      (snapshot) => {
-        const transactionData = snapshot.docs.map(
-          (doc) => doc.data() as Transaction
-        );
-        setTransactions(transactionData);
-        setLoading(false);
-      },
-      (error) => {
-        console.error('Error fetching transactions:', error);
-        setLoading(false);
-      }
-    );
-
-    const unsubscribeDocuments = onSnapshot(
-      docQuery,
-      (snapshot) => {
-        const documentData = snapshot.docs.map((doc) => doc.data() as Document);
-        setDocuments(documentData);
-      },
-      (error) => {
-        console.error('Error fetching documents:', error);
-      }
-    );
-
-    return () => {
-      unsubscribeTransactions();
-      unsubscribeDocuments();
-    };
-  }, [user]);
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('en-US', {
@@ -116,13 +68,13 @@ export default function DashboardPage() {
     }).format(amount);
 
   const latestDocument = documents
-    .filter((d) => d.status === 'processed')
+    ?.filter((d) => d.status === 'processed')
     .sort(
       (a, b) =>
         new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime()
     )[0];
 
-  if (userLoading || loading) {
+  if (isUserLoading || transactionsLoading || documentsLoading) {
     return (
       <div className="flex justify-center items-center h-full">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -301,13 +253,13 @@ export default function DashboardPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading ? (
+              {transactionsLoading ? (
                 <TableRow>
                   <TableCell colSpan={4} className="h-24 text-center">
                     <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
                   </TableCell>
                 </TableRow>
-              ) : transactions.length > 0 ? (
+              ) : transactions && transactions.length > 0 ? (
                 transactions.slice(0, 7).map((transaction) => (
                   <TableRow key={transaction.id}>
                     <TableCell>

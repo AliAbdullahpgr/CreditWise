@@ -33,12 +33,15 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSigningUp, setIsSigningUp] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
-    if (!isUserLoading && user) {
+    // Only redirect verified users to dashboard
+    // Unverified users will be redirected to verify-email by AuthGuard
+    if (!isUserLoading && user && user.emailVerified && !isSigningUp && !isRedirecting) {
       router.push('/dashboard');
     }
-  }, [user, isUserLoading, router]);
+  }, [user, isUserLoading, isSigningUp, isRedirecting, router]);
 
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,14 +61,15 @@ export default function SignupPage() {
       // Send email verification with custom settings
       try {
         await sendEmailVerification(user, {
-          url: window.location.origin + '/login',
+          url: `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/login`,
           handleCodeInApp: false,
         });
       } catch (emailError: any) {
+        console.error('Email verification error:', emailError);
         toast({
           variant: 'destructive',
           title: 'Warning',
-          description: 'Account created but verification email could not be sent. Please try to resend it from the login page.',
+          description: 'Account created but verification email could not be sent. You can try logging in and we will send you a verification email.',
         });
       }
 
@@ -85,16 +89,19 @@ export default function SignupPage() {
         // Silently fail - profile creation is not critical for signup
       }
 
-      // Sign out the user until they verify their email
-      await auth.signOut();
+      // Set redirecting flag to prevent auto-redirect to dashboard
+      setIsRedirecting(true);
+      
+      // DON'T sign out - keep user authenticated so they can check verification status
+      // await auth.signOut();
 
       toast({
-        title: 'Account Created!',
-        description: 'Please check your email to verify your account before logging in.',
+        title: 'Account Created! 🎉',
+        description: 'Please check your email to verify your account. We\'ll check your status automatically.',
       });
       
-      // Redirect to login page
-      router.push('/login');
+      // Redirect to verify-email page (user stays authenticated)
+      router.push('/verify-email');
     } catch (error: any) {
       let description = 'An unexpected error occurred. Please try again.';
       if (error.code === 'auth/email-already-in-use') {
@@ -112,6 +119,8 @@ export default function SignupPage() {
       });
     } finally {
       setIsSigningUp(false);
+      // Keep redirecting flag true if we successfully signed up
+      // It will be reset when component unmounts
     }
   };
 

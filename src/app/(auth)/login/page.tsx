@@ -36,7 +36,7 @@ export default function LoginPage() {
   const [lastUnverifiedUser, setLastUnverifiedUser] = useState<any>(null);
 
   useEffect(() => {
-    // Only redirect if user is fully authenticated and verified
+    // Only redirect verified users to dashboard
     if (!isUserLoading && user && user.emailVerified) {
       router.push('/dashboard');
     }
@@ -78,17 +78,25 @@ export default function LoginPage() {
         password
       );
       
+      // Reload user to get fresh email verification status
+      await userCredential.user.reload();
+      
       // Check if email is verified
       if (!userCredential.user.emailVerified) {
         // Store user info for resending verification email
         setLastUnverifiedUser(userCredential.user);
         setShowResendSection(true);
         
+        // CRITICAL: Sign out immediately to prevent auto-redirect to dashboard
+        await auth.signOut();
+        
         toast({
-          variant: 'destructive',
           title: 'Email Not Verified',
-          description: 'Please verify your email before logging in. Use the "Resend Verification Email" button below.',
+          description: 'Please verify your email. We\'ll check your status automatically.',
         });
+        
+        // Redirect to verify-email page (user stays authenticated)
+        router.push('/verify-email');
         return;
       }
       
